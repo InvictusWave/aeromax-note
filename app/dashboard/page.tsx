@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  Contact2,
   Download,
   Flame,
   Layers,
@@ -28,6 +29,9 @@ import { followUpState, type EventNote } from '@/lib/event-types';
 import { useEvents } from '@/hooks/use-events';
 import { exportEventsToCsv } from '@/lib/export';
 import { actionLabel, potentialLabel } from '@/lib/labels';
+import { cleanPhoneNumber, downloadVCard } from '@/lib/contact-actions';
+import { WhatsAppTemplateModal } from '@/components/whatsapp-template-modal';
+
 
 function formatContactHref(contactStr: string) {
   if (!contactStr) return null;
@@ -85,6 +89,14 @@ function Metric({
 
 export default function DashboardPage() {
   const { events, loading, error, reload, updateFollowUp } = useEvents();
+  const [activeWaLead, setActiveWaLead] = useState<{
+    contactId: number;
+    eventId: number;
+    eventName: string;
+    name: string;
+    contact: string;
+    company: string;
+  } | null>(null);
 
   const contacts = useMemo(
     () => events.reduce((total, event) => total + event.networking.length, 0),
@@ -359,27 +371,45 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                            {href && (
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-end sm:self-center">
+                            {cleanPhoneNumber(lead.contact) ? (
+                              <button
+                                type="button"
+                                onClick={() => setActiveWaLead(lead)}
+                                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-emerald-50/60 px-2.5 text-xs font-semibold text-emerald-800 shadow-xs transition hover:bg-emerald-100/80 active:scale-95"
+                              >
+                                <MessageCircle size={14} className="text-emerald-600" />
+                                <span>WhatsApp</span>
+                              </button>
+                            ) : href ? (
                               <a
                                 href={href}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-3 text-xs font-semibold text-ink shadow-xs transition hover:bg-slate-50 active:scale-95"
+                                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-slate-50 active:scale-95"
                               >
-                                {href.startsWith('https://wa.me') ? (
-                                  <>
-                                    <MessageCircle size={14} className="text-emerald-600" />
-                                    <span>WhatsApp</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Phone size={14} className="text-leaf" />
-                                    <span>Hubungi</span>
-                                  </>
-                                )}
+                                <Phone size={14} className="text-leaf" />
+                                <span>Hubungi</span>
                               </a>
-                            )}
+                            ) : null}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                downloadVCard({
+                                  name: lead.name,
+                                  company: lead.company,
+                                  position: lead.position,
+                                  contact: lead.contact,
+                                  eventName: lead.eventName,
+                                })
+                              }
+                              title="Simpan kontak ke HP (.vcf)"
+                              className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-white text-slate-500 shadow-xs transition hover:bg-slate-50 hover:text-ink active:scale-95"
+                            >
+                              <Download size={14} />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => updateFollowUp(lead.eventId, !lead.eventFollowUpDone)}
@@ -585,7 +615,19 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {activeWaLead && (
+        <WhatsAppTemplateModal
+          isOpen={Boolean(activeWaLead)}
+          onClose={() => setActiveWaLead(null)}
+          contactName={activeWaLead.name}
+          contactPhone={activeWaLead.contact}
+          companyName={activeWaLead.company}
+          eventName={activeWaLead.eventName}
+        />
+      )}
     </Protected>
   );
 }
+
 
