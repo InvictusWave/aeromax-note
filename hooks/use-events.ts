@@ -119,6 +119,32 @@ export function useEvents() {
     }
   }, []);
 
-  return { events, loading, error, reload: () => load(true), updateFollowUp };
+  const deleteEvent = useCallback(async (id: number) => {
+    const response = await fetch(`/api/events?id=${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error('Gagal menghapus catatan');
+
+    const update = (items: EventNote[]) => items.filter(event => event.id !== id);
+
+    if (cachedEvents) cachedEvents = update(cachedEvents);
+    cachedAt = Date.now();
+    setEvents(current => update(current));
+
+    if (typeof window !== 'undefined' && cachedEvents) {
+      try {
+        sessionStorage.setItem(
+          'aeromax_events_cache',
+          JSON.stringify({ data: cachedEvents, cachedAt })
+        );
+      } catch {
+        // Ignore
+      }
+    }
+  }, []);
+
+  return { events, loading, error, reload: () => load(true), updateFollowUp, deleteEvent };
 }
+
 

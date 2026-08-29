@@ -1,35 +1,41 @@
-'use client';
-
 import Link from 'next/link';
 import { BriefcaseBusiness, CalendarDays, Check, MapPin, Pencil, Users, X } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import { FollowUpBadge } from '@/components/follow-up-badge';
 import { followUpState, type EventNote } from '@/lib/event-types';
 import { actionLabel, potentialLabel } from '@/lib/labels';
+import { TimedUndoAction } from '@/components/timed-undo-action';
 
 type EventDetailProps = {
   event: EventNote;
   close: () => void;
   updateFollowUp: (id: number, done: boolean) => Promise<void>;
+  deleteEvent?: (id: number) => Promise<void>;
 };
 
-export function EventDetail({ event, close, updateFollowUp }: EventDetailProps) {
+export function EventDetail({ event, close, updateFollowUp, deleteEvent }: EventDetailProps) {
   const status = followUpState(event);
+
+  async function handleDelete() {
+    if (!deleteEvent) return;
+    await deleteEvent(event.id);
+    close();
+  }
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/35 sm:flex sm:items-center sm:justify-center sm:p-6"
+      className="fixed inset-0 z-50 bg-ink/35 backdrop-blur-xs sm:flex sm:items-center sm:justify-center sm:p-6"
       onMouseDown={eventPointer => {
         if (eventPointer.target === eventPointer.currentTarget) close();
       }}
     >
-      <div className="absolute inset-x-0 bottom-0 max-h-[92svh] overflow-y-auto overscroll-contain rounded-t-3xl bg-mist p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:relative sm:max-w-2xl sm:rounded-3xl sm:p-6">
+      <div className="absolute inset-x-0 bottom-0 max-h-[92svh] overflow-y-auto overscroll-contain rounded-t-3xl bg-mist p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:relative sm:max-w-2xl sm:rounded-3xl sm:p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <div className="mb-2"><FollowUpBadge state={status} /></div>
             <h2 className="text-2xl font-bold">{event.name}</h2>
           </div>
-          <button onClick={close} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white" aria-label="Tutup">
+          <button onClick={close} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white shadow-xs" aria-label="Tutup">
             <X size={19} />
           </button>
         </div>
@@ -41,20 +47,37 @@ export function EventDetail({ event, close, updateFollowUp }: EventDetailProps) 
           <p>Tipe: {event.type || '—'}</p>
         </Card>
 
-        <div className={`mb-4 grid gap-2 ${status === 'none' ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          <Link href={`/form?edit=${event.id}`} onClick={close}>
-            <Button type="button" className="w-full border border-line bg-white text-ink"><Pencil size={16} /> Ubah Catatan</Button>
-          </Link>
-          {status !== 'none' && (
-            <Button
-              type="button"
-              onClick={() => updateFollowUp(event.id, !event.followUpDone)}
-              className={event.followUpDone ? 'border border-line bg-white text-ink' : 'bg-ink text-white'}
-            >
-              <Check size={16} />{event.followUpDone ? 'Belum selesai' : 'Sudah selesai'}
-            </Button>
+        <div className="mb-4 space-y-2">
+          <div className={`grid gap-2 ${status === 'none' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <Link href={`/form?edit=${event.id}`} onClick={close} className="w-full">
+              <Button type="button" className="w-full border border-line bg-white text-ink">
+                <Pencil size={16} /> Ubah Catatan
+              </Button>
+            </Link>
+            {status !== 'none' && (
+              <Button
+                type="button"
+                onClick={() => updateFollowUp(event.id, !event.followUpDone)}
+                className={event.followUpDone ? 'border border-line bg-white text-ink' : 'bg-ink text-white'}
+              >
+                <Check size={16} />{event.followUpDone ? 'Belum selesai' : 'Sudah selesai'}
+              </Button>
+            )}
+          </div>
+
+          {deleteEvent && (
+            <TimedUndoAction
+              initialSeconds={10}
+              deleteLabel="Hapus Catatan"
+              undoLabel="Batalkan Penghapusan"
+              confirmLabel="Hapus Sekarang"
+              warningText="Catatan dan semua kontak/prospek di dalamnya akan dihapus permanen."
+              onExecute={handleDelete}
+              className="w-full"
+            />
           )}
         </div>
+
 
         <section className="mb-4">
           <h3 className="mb-2 flex items-center gap-2 font-bold"><Users size={17} /> Kontak ({event.networking.length})</h3>

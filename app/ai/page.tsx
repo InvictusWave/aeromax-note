@@ -13,12 +13,29 @@ import {
 } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { Protected } from '@/components/protected';
-import { Button, Card, Textarea } from '@/components/ui';
+import { Button, Card, MorphingDiscoveryBar, type Category, Textarea } from '@/components/ui';
 import { followUpState } from '@/lib/event-types';
 import { useEvents } from '@/hooks/use-events';
 
 type Tab = 'chat' | 'analysis';
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+const AI_CATEGORIES: Category[] = [
+  {
+    id: 'chat',
+    label: 'Chat',
+    icon: <MessageSquareText size={18} />,
+    activeColor: '#f1f5f2',
+    activeTextColor: '#047857',
+  },
+  {
+    id: 'analysis',
+    label: 'Saran & Analisis',
+    icon: <BrainCircuit size={18} />,
+    activeColor: '#f1f5f2',
+    activeTextColor: '#047857',
+  },
+];
 
 const initialMessage: ChatMessage = {
   role: 'assistant',
@@ -193,13 +210,13 @@ export default function AiPage() {
           <p className="mt-3 max-w-2xl text-sm leading-5 text-slate-500">Chat dan analisis cerdas berdasarkan catatan event yang tersimpan.</p>
         </header>
 
-        <div className="mb-5 grid grid-cols-2 rounded-2xl border border-line bg-white p-1.5 shadow-soft" role="tablist" aria-label="Fitur AI">
-          <button type="button" role="tab" aria-selected={tab === 'chat'} onClick={() => setTab('chat')} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${tab === 'chat' ? 'bg-ink text-white' : 'text-slate-500'}`}>
-            <MessageSquareText size={17} /> Chat
-          </button>
-          <button type="button" role="tab" aria-selected={tab === 'analysis'} onClick={() => setTab('analysis')} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${tab === 'analysis' ? 'bg-ink text-white' : 'text-slate-500'}`}>
-            <BrainCircuit size={17} /> Saran & Analisis
-          </button>
+        <div className="mb-5 flex justify-center sm:justify-start">
+          <MorphingDiscoveryBar
+            categories={AI_CATEGORIES}
+            value={tab}
+            onChange={(catId) => setTab(catId as Tab)}
+            className="w-full sm:w-auto"
+          />
         </div>
 
         {eventError && (

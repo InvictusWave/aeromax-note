@@ -77,7 +77,6 @@ export function Logo({
             <span className="font-extrabold tracking-tight text-ink text-base sm:text-lg">
               AEROMAX
             </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             {badgeText && (
               <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
                 {badgeText}

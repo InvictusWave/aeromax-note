@@ -37,3 +37,12 @@ export function Button({ children, className = '', ...props }: ButtonHTMLAttribu
     </button>
   );
 }
+
+export { Pagination } from '@/components/pagination';
+export { FluidTabs } from '@/components/fluid-tabs';
+export { TimedUndoAction } from '@/components/timed-undo-action';
+export { DiscreteTabs } from '@/components/discrete-tabs';
+export { MorphingDiscoveryBar, type Category } from '@/components/morphing-discovery-bar';
+
+
+

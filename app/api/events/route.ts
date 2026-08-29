@@ -52,3 +52,32 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Catatan tidak dapat diperbarui' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  if (!(await getSessionUser(request))) return NextResponse.json({ error: 'Akses tidak sah' }, { status: 401 });
+  if (!db) return NextResponse.json({ error: 'Database belum dikonfigurasi' }, { status: 503 });
+
+  try {
+    const url = new URL(request.url);
+    let id = Number(url.searchParams.get('id'));
+    if (!id) {
+      const body = await request.json().catch(() => ({}));
+      id = Number(body?.id);
+    }
+    if (!id || !Number.isInteger(id)) {
+      return NextResponse.json({ error: 'ID catatan tidak valid' }, { status: 400 });
+    }
+
+    await db.transaction(async transaction => {
+      await transaction.delete(networking).where(eq(networking.eventId, id));
+      await transaction.delete(prospects).where(eq(prospects.eventId, id));
+      await transaction.delete(events).where(eq(events.id, id));
+    });
+
+    return NextResponse.json({ id, deleted: true });
+  } catch (error) {
+    console.error('Gagal menghapus catatan event:', error);
+    return NextResponse.json({ error: 'Catatan tidak dapat dihapus' }, { status: 500 });
+  }
+}
+

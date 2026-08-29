@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, NotebookPen, Plus, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
+import { DiscreteTabs } from '@/components/discrete-tabs';
+
 const links = [
   { href: '/dashboard', label: 'Dasbor', icon: LayoutDashboard },
   { href: '/notes', label: 'Catatan', icon: NotebookPen },
@@ -14,9 +16,42 @@ const links = [
 ];
 const desktopLinks = [...links, { href: '/account', label: 'Akun', icon: UserRound }];
 
+const mobileTabs = [
+  {
+    id: 'dashboard',
+    label: 'Dasbor',
+    icon: <LayoutDashboard size={20} />,
+    activeColor: 'text-emerald-700',
+    href: '/dashboard',
+  },
+  {
+    id: 'notes',
+    label: 'Catatan',
+    icon: <NotebookPen size={20} />,
+    activeColor: 'text-leaf',
+    href: '/notes',
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    icon: <Sparkles size={20} />,
+    activeColor: 'text-amber-500',
+    href: '/ai',
+  },
+];
+
 export function Brand(_: { dashboard?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const currentTabId = pathname.startsWith('/dashboard')
+    ? 'dashboard'
+    : pathname.startsWith('/notes') || pathname.startsWith('/form')
+    ? 'notes'
+    : pathname.startsWith('/ai')
+    ? 'ai'
+    : 'dashboard';
+
 
   useEffect(() => {
     router.prefetch('/dashboard');
@@ -76,28 +111,17 @@ export function Brand(_: { dashboard?: boolean }) {
         </div>
       </header>
 
-      {/* Floating Bottom Navigation Bar for Mobile */}
-      <nav className="fixed inset-x-3 bottom-[calc(.75rem+env(safe-area-inset-bottom))] z-40 grid grid-cols-4 rounded-2xl border border-line/80 bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(23,33,27,0.12)] backdrop-blur-md sm:hidden">
-        {links.map(link => {
-          const Icon = link.icon;
-          const active = pathname === link.href || (link.href === '/form' && pathname.startsWith('/form'));
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              prefetch={true}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold transition-all ${
-                active
-                  ? 'bg-ink text-white shadow-xs'
-                  : 'text-slate-500 hover:text-ink active:scale-95'
-              }`}
-            >
-              <Icon size={18} className={active ? 'text-lime' : ''} />
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Floating Discrete Tabs Bottom Navigation Bar for Mobile */}
+      <div className="fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 sm:hidden pointer-events-none">
+        <div className="pointer-events-auto">
+          <DiscreteTabs
+            tabs={mobileTabs}
+            activeTab={currentTabId}
+            className="shadow-[0_16px_36px_rgba(0,0,0,0.18)]"
+          />
+        </div>
+      </div>
     </>
   );
 }
+
