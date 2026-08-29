@@ -43,6 +43,14 @@ export { FluidTabs } from '@/components/fluid-tabs';
 export { TimedUndoAction } from '@/components/timed-undo-action';
 export { DiscreteTabs } from '@/components/discrete-tabs';
 export { MorphingDiscoveryBar, type Category } from '@/components/morphing-discovery-bar';
+export { Badge } from '@/components/base-ui/badge';
+export {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/base-ui/tooltip';
+
 
 
 

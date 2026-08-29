@@ -31,6 +31,12 @@ import { exportEventsToCsv } from '@/lib/export';
 import { actionLabel, potentialLabel } from '@/lib/labels';
 import { cleanPhoneNumber, downloadVCard } from '@/lib/contact-actions';
 import { WhatsAppTemplateModal } from '@/components/whatsapp-template-modal';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/base-ui/tooltip';
+
 
 
 function formatContactHref(contactStr: string) {
@@ -373,55 +379,81 @@ export default function DashboardPage() {
 
                           <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-end sm:self-center">
                             {cleanPhoneNumber(lead.contact) ? (
-                              <button
-                                type="button"
-                                onClick={() => setActiveWaLead(lead)}
-                                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-emerald-50/60 px-2.5 text-xs font-semibold text-emerald-800 shadow-xs transition hover:bg-emerald-100/80 active:scale-95"
-                              >
-                                <MessageCircle size={14} className="text-emerald-600" />
-                                <span>WhatsApp</span>
-                              </button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveWaLead(lead)}
+                                    className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-emerald-50/60 px-2.5 text-xs font-semibold text-emerald-800 shadow-xs transition hover:bg-emerald-100/80 active:scale-95"
+                                  >
+                                    <MessageCircle size={14} className="text-emerald-600" />
+                                    <span>WhatsApp</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="rounded-full">
+                                  <p>Pilih template pesan WhatsApp</p>
+                                </TooltipContent>
+                              </Tooltip>
                             ) : href ? (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-slate-50 active:scale-95"
-                              >
-                                <Phone size={14} className="text-leaf" />
-                                <span>Hubungi</span>
-                              </a>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-slate-50 active:scale-95"
+                                  >
+                                    <Phone size={14} className="text-leaf" />
+                                    <span>Hubungi</span>
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent className="rounded-full">
+                                  <p>Hubungi via Telepon/Email</p>
+                                </TooltipContent>
+                              </Tooltip>
                             ) : null}
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                downloadVCard({
-                                  name: lead.name,
-                                  company: lead.company,
-                                  position: lead.position,
-                                  contact: lead.contact,
-                                  eventName: lead.eventName,
-                                })
-                              }
-                              title="Simpan kontak ke HP (.vcf)"
-                              className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-white text-slate-500 shadow-xs transition hover:bg-slate-50 hover:text-ink active:scale-95"
-                            >
-                              <Download size={14} />
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    downloadVCard({
+                                      name: lead.name,
+                                      company: lead.company,
+                                      position: lead.position,
+                                      contact: lead.contact,
+                                      eventName: lead.eventName,
+                                    })
+                                  }
+                                  className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-white text-slate-500 shadow-xs transition hover:bg-slate-50 hover:text-ink active:scale-95"
+                                >
+                                  <Download size={14} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="rounded-full">
+                                <p>Simpan kontak ke HP (.vcf)</p>
+                              </TooltipContent>
+                            </Tooltip>
 
-                            <button
-                              type="button"
-                              onClick={() => updateFollowUp(lead.eventId, !lead.eventFollowUpDone)}
-                              title="Tandai follow-up event selesai"
-                              className={`grid h-9 w-9 place-items-center rounded-xl border transition ${
-                                lead.eventFollowUpDone
-                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                  : 'border-line bg-white text-slate-400 hover:text-ink'
-                              }`}
-                            >
-                              <Check size={16} />
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => updateFollowUp(lead.eventId, !lead.eventFollowUpDone)}
+                                  className={`grid h-9 w-9 place-items-center rounded-xl border transition ${
+                                    lead.eventFollowUpDone
+                                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                      : 'border-line bg-white text-slate-400 hover:text-ink'
+                                  }`}
+                                >
+                                  <Check size={16} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="rounded-full">
+                                <p>{lead.eventFollowUpDone ? 'Tandai belum selesai' : 'Tandai follow-up selesai'}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                       );

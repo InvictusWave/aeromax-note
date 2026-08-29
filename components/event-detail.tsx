@@ -20,6 +20,12 @@ import { actionLabel, potentialLabel } from '@/lib/labels';
 import { TimedUndoAction } from '@/components/timed-undo-action';
 import { cleanPhoneNumber, downloadVCard } from '@/lib/contact-actions';
 import { WhatsAppTemplateModal } from '@/components/whatsapp-template-modal';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/base-ui/tooltip';
+
 
 type EventDetailProps = {
   event: EventNote;
@@ -129,30 +135,50 @@ export function EventDetail({ event, close, updateFollowUp, deleteEvent }: Event
                       {/* Contact Actions Bar */}
                       <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-line/70">
                         {phone && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveWaContact(person)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition active:scale-95"
-                          >
-                            <MessageCircle size={14} /> WhatsApp
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => setActiveWaContact(person)}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition active:scale-95"
+                              >
+                                <MessageCircle size={14} /> WhatsApp
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="rounded-full">
+                              <p>Buka template WhatsApp Aeromax</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         {phone && (
-                          <a
-                            href={`tel:${phone}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition active:scale-95"
-                          >
-                            <Phone size={13} /> Telepon
-                          </a>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`tel:${phone}`}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition active:scale-95"
+                              >
+                                <Phone size={13} /> Telepon
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent className="rounded-full">
+                              <p>Hubungi nomor {phone}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => handleSaveVCard(person)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-mist px-2.5 py-1.5 text-xs font-semibold text-leaf hover:bg-emerald-100/50 transition active:scale-95 ml-auto"
-                          title="Simpan kontak ke buku telepon"
-                        >
-                          <Download size={13} /> Simpan Kontak (.vcf)
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveVCard(person)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-mist px-2.5 py-1.5 text-xs font-semibold text-leaf hover:bg-emerald-100/50 transition active:scale-95 ml-auto"
+                            >
+                              <Download size={13} /> Simpan Kontak (.vcf)
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="rounded-full">
+                            <p>Download file kontak untuk iPhone / Android</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </Card>
                   );
