@@ -39,35 +39,35 @@ const AI_CATEGORIES: Category[] = [
 
 const initialMessage: ChatMessage = {
   role: 'assistant',
-  content: 'Halo! Saya siap membantu membaca catatan event Aeromax, menentukan prioritas follow-up, dan menemukan peluang bisnis. Apa yang ingin Anda ketahui?',
+  content: 'Halo! Saya asisten AI Aeromax Studio. Siap membantu menganalisis catatan event, memetakan kebutuhan klien (live recording, sound RCF, broadcast streaming, lighting/LED), dan menyusun prioritas follow-up. Ada yang ingin didiskusikan?',
 };
 
 const chatSuggestions = [
-  'Event mana yang harus diprioritaskan?',
-  'Siapa yang perlu di-follow-up hari ini?',
-  'Rangkum peluang dengan potensi tinggi.',
+  'Siapa kontak/EO yang perlu di-follow-up hari ini?',
+  'Rangkum peluang produksi live recording & sound system.',
+  'Event mana yang punya potensi kolaborasi panggung terbesar?',
 ];
 
 const analysisOptions = [
   {
     title: 'Prioritas follow-up',
-    description: 'Urutkan kontak dan event yang paling mendesak.',
-    prompt: 'Tentukan 5 prioritas follow-up terpenting. Jelaskan alasan dan tindakan berikutnya untuk masing-masing prioritas.',
+    description: 'Urutkan kontak & event paling mendesak untuk ditindaklanjuti.',
+    prompt: 'Tentukan prioritas follow-up terpenting bagi tim Aeromax Studio. Jelaskan alasan, PIC/grup musik yang perlu dihubungi, dan tawaran layanan (sound system, streaming multicam, recording, lighting/LED) yang relevan.',
   },
   {
-    title: 'Kualitas pipeline',
-    description: 'Nilai kekuatan prospek dan celah data yang ada.',
-    prompt: 'Analisis kualitas pipeline prospek Aeromax. Kelompokkan peluang kuat, sedang, dan lemah serta jelaskan celah data yang harus dilengkapi.',
+    title: 'Peluang upselling layanan',
+    description: 'Identifikasi potensi paket audio FOH, lighting & streaming.',
+    prompt: 'Analisis peluang upselling dan cross-selling layanan Aeromax (seperti penambahan Sound RCF, Mixer Yamaha, Multicam Broadcast, atau Layar LED) berdasarkan catatan event yang ada.',
   },
   {
-    title: 'Rencana 7 hari',
-    description: 'Susun agenda tindak lanjut yang realistis.',
-    prompt: 'Susun rencana tindak lanjut Aeromax untuk 7 hari ke depan. Buat urutan prioritas yang konkret dan realistis berdasarkan data.',
+    title: 'Rencana aksi 7 hari',
+    description: 'Susun agenda tindak lanjut tim Aeromax 7 hari ke depan.',
+    prompt: 'Susun rencana tindak lanjut konkret bagi tim Aeromax untuk 7 hari ke depan berdasarkan catatan event dan status follow-up.',
   },
   {
-    title: 'Pola dan peluang',
-    description: 'Temukan pola industri, event, dan potensi kontak.',
-    prompt: 'Temukan pola penting dari seluruh event, industri, kontak, dan prospek. Soroti peluang bisnis serta risiko yang mungkin terlewat.',
+    title: 'Evaluasi pipeline & mitra',
+    description: 'Analisis kekuatan mitra (OM, DJ, EO) dan celah data.',
+    prompt: 'Evaluasi pipeline klien dan mitra (Orkes Melayu, DJ, EO, instansi). Soroti peluang bisnis utama serta data kontak PIC yang masih perlu dilengkapi.',
   },
 ];
 

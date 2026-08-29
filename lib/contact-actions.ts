@@ -32,11 +32,12 @@ export function extractEmail(raw: string): string | null {
   return match ? match[0] : null;
 }
 
-export type WhatsAppTemplateKey = 'intro' | 'catalog' | 'meeting';
+export type WhatsAppTemplateKey = 'intro' | 'live_recording' | 'sound_lighting' | 'meeting';
 
 export interface WhatsAppTemplate {
   key: WhatsAppTemplateKey;
   label: string;
+  badge: string;
   description: string;
   getText: (name: string, eventName: string) => string;
 }
@@ -44,26 +45,38 @@ export interface WhatsAppTemplate {
 export const WA_TEMPLATES: WhatsAppTemplate[] = [
   {
     key: 'intro',
-    label: 'Salam & Perkenalan',
+    label: 'Salam Perkenalan',
+    badge: 'Umum',
     description: 'Sapaan hangat pasca pertemuan di event',
     getText: (name: string, eventName: string) =>
-      `Halo Pak/Bu ${name || ''}, salam kenal. Senang bisa berdiskusi di event ${eventName || 'kemarin'}.\n\nSaya dari tim Aeromax, ingin menyambung silaturahmi dan menindaklanjuti obrolan kita terkait peluang kolaborasi. Apakah ada waktu yang tepat untuk kita mengobrol santai? Terima kasih.`,
+      `Halo Pak/Bu ${name || ''}, salam kenal. Senang bisa berdiskusi di event ${eventName || 'kemarin'}.\n\nSaya dari tim Aeromax Studio (Production & Audio), ingin menyambung silaturahmi dan menindaklanjuti obrolan kita terkait potensi kolaborasi. Apakah ada waktu yang tepat untuk kita mengobrol santai? Terima kasih.`,
   },
   {
-    key: 'catalog',
-    label: 'Kirim Katalog & Solusi',
-    description: 'Menyampaikan materi atau penawaran produk',
+    key: 'live_recording',
+    label: 'Live Recording & YouTube',
+    badge: 'Broadcast',
+    description: 'Penawaran rekaman studio multicam & live streaming',
     getText: (name: string, eventName: string) =>
-      `Halo Pak/Bu ${name || ''}, menindaklanjuti obrolan kita di event ${eventName || 'kemarin'}, berikut saya kirimkan info katalog dan solusi dari Aeromax.\n\nJika ada kebutuhan atau diskusi teknis lebih lanjut, silakan kabari saya ya Pak/Bu. Senang bisa terhubung!`,
+      `Halo Pak/Bu ${name || ''}, menindaklanjuti obrolan kita di ${eventName || 'kemarin'}, kami dari Aeromax Studio siap memfasilitasi live recording & streaming multicam YouTube profesional (bisa in-house di Markas Aeromax Karanganyar atau outdoor).\n\nKira-kira kapan rencana jadwal produksi/take video musik Bapak/Ibu? Kami siap siapkan technical rider dan jadwal studionya.`,
+  },
+  {
+    key: 'sound_lighting',
+    label: 'Sound System & Lighting/LED',
+    badge: 'Panggung',
+    description: 'Penawaran paket audio FOH RCF, mixer Yamaha & visual LED',
+    getText: (name: string, eventName: string) =>
+      `Halo Pak/Bu ${name || ''}, berikut kami sampaikan informasi layanan tata suara & visual dari Aeromax Production (Sound System Line Array RCF/dBTechnologies, Mixer Yamaha, Lighting Panggung, dan Layar LED Videotron).\n\nJika ada rencana agenda acara panggung atau konser selanjutnya, silakan kabari agar kami buatkan estimasi spesifikasi teknis terbaik. Terima kasih!`,
   },
   {
     key: 'meeting',
-    label: 'Jadwalkan Diskusi Lanjutan',
-    description: 'Ajakan meeting lanjutan via online / tatap muka',
+    label: 'Jadwalkan Diskusi',
+    badge: 'Agenda',
+    description: 'Ajakan meeting teknis / mampir ke Markas Aeromax',
     getText: (name: string, eventName: string) =>
-      `Halo Pak/Bu ${name || ''}, terima kasih banyak atas waktu dan diskusinya di event ${eventName || 'kemarin'}.\n\nApakah ada waktu luang di minggu ini untuk kita jadwalkan diskusi singkat via Zoom / Google Meet atau tatap muka? Kami siap menyesuaikan jadwal Bapak/Ibu. Terima kasih.`,
+      `Halo Pak/Bu ${name || ''}, terima kasih banyak atas waktu dan diskusinya di event ${eventName || 'kemarin'}.\n\nApakah ada waktu luang minggu ini untuk diskusi santai via WhatsApp call atau mampir ke Markas Aeromax di Karanganyar? Kami siap menyesuaikan waktu Bapak/Ibu. Terima kasih.`,
   },
 ];
+
 
 export function getWhatsAppUrl(
   phone: string,

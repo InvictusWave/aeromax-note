@@ -90,9 +90,9 @@ export function WhatsAppTemplateModal({
         {/* Template Selector Pills */}
         <div className="mt-4">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Pilih Template Pesan
+            Pilih Layanan & Template Pesan
           </p>
-          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-line bg-mist p-1">
+          <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-line bg-mist p-1.5">
             {WA_TEMPLATES.map((tmpl) => {
               const active = tmpl.key === selectedKey;
               return (
@@ -100,13 +100,21 @@ export function WhatsAppTemplateModal({
                   key={tmpl.key}
                   type="button"
                   onClick={() => setSelectedKey(tmpl.key)}
-                  className={`rounded-xl py-2 px-1 text-center text-xs font-semibold transition-all ${
+                  className={`flex flex-col items-start rounded-xl py-2 px-2.5 text-left text-xs transition-all ${
                     active
-                      ? 'bg-white text-emerald-800 shadow-xs ring-1 ring-black/5 font-bold'
-                      : 'text-slate-500 hover:text-ink'
+                      ? 'bg-white text-emerald-950 shadow-xs ring-1 ring-black/5 font-bold'
+                      : 'text-slate-600 hover:text-ink hover:bg-white/50'
                   }`}
                 >
-                  {tmpl.label}
+                  <div className="flex w-full items-center justify-between gap-1">
+                    <span className="truncate font-bold">{tmpl.label}</span>
+                    <span className="rounded bg-emerald-100/70 px-1 py-0.2 text-[9px] font-semibold text-emerald-800 shrink-0">
+                      {tmpl.badge}
+                    </span>
+                  </div>
+                  <span className="mt-0.5 line-clamp-1 text-[10px] text-slate-400 font-normal">
+                    {tmpl.description}
+                  </span>
                 </button>
               );
             })}
