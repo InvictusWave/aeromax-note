@@ -124,7 +124,7 @@ export default function AccountPage() {
   return (
     <Protected>
       <Brand />
-      <main className="mx-auto max-w-5xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-12">
+      <main className="mx-auto max-w-5xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-12 animate-page-enter">
         <header className="mb-5 px-1 sm:px-0">
           <p className="text-[11px] font-bold uppercase tracking-[.18em] text-leaf">Pengaturan akses</p>
           <div className="mt-1 flex items-end justify-between gap-3">

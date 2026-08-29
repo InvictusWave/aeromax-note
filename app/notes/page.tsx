@@ -81,7 +81,7 @@ export default function NotesPage() {
   return (
     <Protected>
       <Brand />
-      <main className="mx-auto max-w-6xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-12">
+      <main className="mx-auto max-w-6xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-12 animate-page-enter">
         <header className="mb-5 px-1 sm:mb-6 sm:px-0">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
@@ -151,7 +151,7 @@ export default function NotesPage() {
 
         {loading && (
           <div className="space-y-3">
-            {[1, 2, 3].map(item => <div key={item} className="h-40 animate-pulse rounded-[20px] bg-white" />)}
+            {[1, 2, 3].map(item => <div key={item} className="h-40 rounded-[20px] skeleton-shimmer" />)}
           </div>
         )}
 

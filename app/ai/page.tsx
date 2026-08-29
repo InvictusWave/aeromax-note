@@ -181,7 +181,7 @@ export default function AiPage() {
   return (
     <Protected>
       <Brand />
-      <main className={`mx-auto max-w-4xl px-3 sm:px-6 ${tab === 'chat' ? 'pb-[calc(12rem+env(safe-area-inset-bottom))] sm:pb-32' : 'pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-12'}`}>
+      <main className={`mx-auto max-w-4xl px-3 sm:px-6 animate-page-enter ${tab === 'chat' ? 'pb-[calc(12rem+env(safe-area-inset-bottom))] sm:pb-32' : 'pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-12'}`}>
         <header className="mb-5 px-1 sm:px-0">
           <div className="flex items-center gap-3">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-ink text-lime"><Sparkles size={22} /></span>

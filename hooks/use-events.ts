@@ -3,14 +3,37 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { EventNote } from '@/lib/event-types';
 
-const CACHE_DURATION = 60_000;
+const CACHE_DURATION = 120_000;
 let cachedEvents: EventNote[] | null = null;
 let cachedAt = 0;
 let activeRequest: Promise<EventNote[]> | null = null;
 
+// Initialize cache from session storage if in browser
+if (typeof window !== 'undefined' && !cachedEvents) {
+  try {
+    const stored = sessionStorage.getItem('aeromax_events_cache');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed.data)) {
+        cachedEvents = parsed.data;
+        cachedAt = parsed.cachedAt || 0;
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function invalidateEventsCache() {
   cachedEvents = null;
   cachedAt = 0;
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.removeItem('aeromax_events_cache');
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 async function requestEvents(force = false) {
@@ -20,9 +43,19 @@ async function requestEvents(force = false) {
   activeRequest = fetch('/api/events', { credentials: 'include', cache: 'no-store' })
     .then(async response => {
       if (!response.ok) throw new Error('Gagal memuat catatan');
-      const data = await response.json() as EventNote[];
+      const data = (await response.json()) as EventNote[];
       cachedEvents = data;
       cachedAt = Date.now();
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(
+            'aeromax_events_cache',
+            JSON.stringify({ data, cachedAt: Date.now() })
+          );
+        } catch {
+          // Ignore
+        }
+      }
       return data;
     })
     .finally(() => {
@@ -39,12 +72,16 @@ export function useEvents() {
 
   const load = useCallback(async (force = false) => {
     setError('');
+    // Only show loading indicator if we don't have any cached events
     if (!cachedEvents) setLoading(true);
 
     try {
-      setEvents(await requestEvents(force));
+      const freshData = await requestEvents(force);
+      setEvents(freshData);
     } catch {
-      setError('Database belum terhubung atau gagal memuat data.');
+      if (!cachedEvents) {
+        setError('Database belum terhubung atau gagal memuat data.');
+      }
     } finally {
       setLoading(false);
     }
@@ -63,11 +100,25 @@ export function useEvents() {
     });
     if (!response.ok) throw new Error('Gagal memperbarui status');
 
-    const update = (items: EventNote[]) => items.map(event => event.id === id ? { ...event, followUpDone } : event);
+    const update = (items: EventNote[]) =>
+      items.map(event => (event.id === id ? { ...event, followUpDone } : event));
+
     if (cachedEvents) cachedEvents = update(cachedEvents);
     cachedAt = Date.now();
     setEvents(current => update(current));
+
+    if (typeof window !== 'undefined' && cachedEvents) {
+      try {
+        sessionStorage.setItem(
+          'aeromax_events_cache',
+          JSON.stringify({ data: cachedEvents, cachedAt })
+        );
+      } catch {
+        // Ignore
+      }
+    }
   }, []);
 
   return { events, loading, error, reload: () => load(true), updateFollowUp };
 }
+
