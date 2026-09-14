@@ -114,4 +114,20 @@ for (const heading of ['Lampiran A: Rekap event', 'Lampiran B: Rekap tugas haria
 }
 assert.ok(!rangedEvent.includes('&mdash;'), 'appendix headings must not use an em dash');
 
+// real-world notes often use an auto-corrected en/em dash instead of a plain hyphen —
+// those must still be recognized as bullet markers, not left as a stray dash in the text
+const unicodeDashTask = buildReportHtml({
+  startDate: '2026-06-01', endDate: '2026-06-30', dateRangeLabel: 'Juni 2026', author: 'Adam',
+  narrative: { judul: 'Laporan Kerja Juni 2026', ringkasan: ['Ringkasan.'], aktivitas: [], tugasHarian: [],
+               analisisPotensi: ['Analisis.'], rekomendasi: ['Rekomendasi.'], penutup: 'Penutup.' },
+  events: [],
+  tasks: [{
+    id: 4, userId: 1, date: '2026-06-01', title: 'Networking event',
+    category: 'Lainnya', location: 'Lapangan',
+    result: 'Melakukan perkenalan. Membangun relasi dengan pihak event organizer. – Memperkenalkan Aeromax Production.',
+    createdAt: '2026-06-01',
+  }],
+});
+assert.match(unicodeDashTask, /<ul class="cell-list"><li>Melakukan perkenalan[^<]*<\/li><li>Memperkenalkan Aeromax Production\.<\/li><\/ul>/, 'en-dash bullet marker is recognized, not left as a stray dash');
+
 console.log('OK');

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
 import { getSessionUser } from '@/lib/auth';
-import { AEROMAX_PROFILE } from '@/lib/ai-brand';
+import { AEROMAX_PROFILE, geminiModelChain } from '@/lib/ai-brand';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,9 +59,9 @@ ${eventContext}`;
 async function generateWithFallback(apiKey: string, contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, context: string, mode: 'chat' | 'analysis') {
   const ai = new GoogleGenAI({ apiKey });
   const analysisModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const models = Array.from(new Set(mode === 'chat'
-    ? ['gemini-2.5-flash', analysisModel]
-    : [analysisModel, 'gemini-2.5-flash']));
+  const models = mode === 'chat'
+    ? geminiModelChain('gemini-2.5-flash', analysisModel)
+    : geminiModelChain(analysisModel, 'gemini-2.5-flash');
   let lastError: unknown;
 
   for (const model of models) {
@@ -82,6 +82,7 @@ async function generateWithFallback(apiKey: string, contents: Array<{ role: 'use
       if (text) return { text, model: response.modelVersion || model };
       lastError = new Error(`Model ${model} tidak menghasilkan teks`);
     } catch (error) {
+      console.error(`Gemini ${mode} error (${model}):`, error instanceof Error ? error.message : error);
       lastError = error;
     }
   }

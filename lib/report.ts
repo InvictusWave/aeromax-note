@@ -13,12 +13,16 @@ const escape = (value: string | number | null | undefined) =>
 
 const dash = (value: string | null | undefined) => (value?.trim() ? escape(value) : '&ndash;');
 
+// Matches a bullet marker at the start of the text or after whitespace: a plain hyphen
+// as well as the hyphen/dash look-alikes phones and word processors auto-correct "-" into.
+const BULLET_MARKER = /(?:^|\s)[-‐-―]\s+/;
+
 /**
  * Renders a free-text notes/hasil field as a compact bullet list when it contains
  * "-"-prefixed items, instead of one run-on paragraph — otherwise as plain text.
  * Whitespace (including hard line-wraps from pasted text) is collapsed first, so a
  * bullet is recognized the same way whether it started on its own line or not.
- * ponytail: any whitespace-bounded "-" counts as a bullet marker, so a lone " - "
+ * ponytail: any whitespace-bounded dash counts as a bullet marker, so a lone " - "
  * used as a sentence dash would also split; acceptable since that's exactly how
  * these notes are written (dash-prefixed points), and this is what was asked for.
  */
@@ -28,7 +32,7 @@ function noteHtml(value: string | null | undefined): string {
 
   const flat = text.replace(/\s+/g, ' ');
   const items = flat
-    .split(/(?:^|\s)-\s+/)
+    .split(BULLET_MARKER)
     .map(item => item.trim())
     .filter(Boolean);
 

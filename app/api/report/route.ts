@@ -5,7 +5,7 @@ import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { db } from '@/db';
 import { events as eventsTable, tasks as tasksTable } from '@/db/schema';
 import { getSessionUser } from '@/lib/auth';
-import { AEROMAX_PROFILE } from '@/lib/ai-brand';
+import { AEROMAX_PROFILE, geminiModelChain } from '@/lib/ai-brand';
 import type { ReportNarrative } from '@/lib/report-types';
 import type { DailyTask } from '@/lib/task-types';
 
@@ -31,10 +31,18 @@ const narrativeSchema = {
   required: ['judul', 'ringkasan', 'aktivitas', 'tugasHarian', 'analisisPotensi', 'rekomendasi', 'penutup'],
 } as const;
 
+function formatDateID(iso: string) {
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? iso : parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 function dateRangeLabel(startDate: string, endDate: string) {
-  const start = new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const end = new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  return `${start} s/d ${end}`;
+  return `${formatDateID(startDate)} s/d ${formatDateID(endDate)}`;
+}
+
+/** Same as `dateRangeLabel`, but collapses to a single date when the event is only one day. */
+function eventPeriodLabel(startDate: string, endDate?: string) {
+  return !endDate || endDate === startDate ? formatDateID(startDate) : dateRangeLabel(startDate, endDate);
 }
 
 /** Deterministic wording used when Gemini is unavailable, so the report still prints. */
@@ -47,7 +55,8 @@ function fallbackNarrative(startDate: string, endDate: string, author: string, c
       `Dari seluruh kontak tersebut, ${context.potensiTinggi} orang tergolong berpotensi tinggi dan ${context.perluFollowUp} kontak masih menunggu tindak lanjut.`,
     ],
     aktivitas: context.events.map(
-      event => `${event.event} (${event.tanggal}, ${event.lokasi}) — ${event.kontak.length} kontak, ${event.prospek.length} prospek.`
+      event =>
+        `${event.event} (${eventPeriodLabel(event.tanggal, event.tanggalSelesai)}, ${event.lokasi}) — ${event.kontak.length} kontak, ${event.prospek.length} prospek.`
     ),
     tugasHarian: context.tugasHarian.map(
       task => `${task.uraian}${task.jenis ? ` (${task.jenis})` : ''}${task.lokasi ? ` di ${task.lokasi}` : ''}.`
@@ -81,6 +90,7 @@ function buildContext(rows: Awaited<ReturnType<typeof loadEvents>>, taskRows: Da
     events: rows.map((row: any) => ({
       event: row.name,
       tanggal: row.date,
+      tanggalSelesai: row.endDate,
       lokasi: row.location,
       penyelenggara: row.organizer,
       tipe: row.type,
@@ -129,7 +139,7 @@ async function writeNarrative(startDate: string, endDate: string, author: string
   if (!apiKey) return null;
 
   const ai = new GoogleGenAI({ apiKey });
-  const models = Array.from(new Set([process.env.GEMINI_MODEL || 'gemini-2.5-flash', 'gemini-2.5-flash']));
+  const models = geminiModelChain(process.env.GEMINI_MODEL || 'gemini-2.5-flash');
 
   const prompt = `Tulis laporan kerja periode ${dateRangeLabel(startDate, endDate)} untuk ${author}, staf Aeromax Studio. Laporan mencakup pekerjaan event maupun tugas harian di luar event.
 
@@ -139,7 +149,7 @@ ATURAN PENULISAN:
 - Pakai istilah yang sesuai bisnis Aeromax (live recording, multicam, sound system FOH, lighting, LED videotron, EO, manajer orkes) hanya jika memang tercermin di data.
 - judul: judul laporan, maksimal 10 kata.
 - ringkasan: 2-3 paragraf utuh (bukan poin) berisi capaian bulan ini beserta angkanya.
-- aktivitas: satu poin per event, sebutkan nama event, tanggal, lokasi, dan hasil konkret pertemuannya. Kosongkan array ini jika tidak ada event.
+- aktivitas: satu poin per event, sebutkan nama event, tanggal, lokasi, dan hasil konkret pertemuannya. Jika tanggalSelesai berbeda dari tanggal, sebutkan sebagai rentang tanggal (misalnya "12 sampai 22 September 2026"), bukan hanya tanggal mulai. Kosongkan array ini jika tidak ada event.
 - tugasHarian: rangkum pekerjaan harian di luar event dari data tugasHarian. Kelompokkan per jenis pekerjaan, sebutkan jumlah dan contoh konkretnya. JANGAN sebutkan tanggal di bagian ini. Kosongkan array ini jika data tugasHarian kosong.
 - analisisPotensi: 1-2 paragraf tentang kualitas prospek, sektor yang dominan, dan peluang bisnis yang terbaca dari data.
 - rekomendasi: 3-5 poin tindak lanjut spesifik, sebutkan nama kontak atau perusahaan yang dituju.
@@ -162,11 +172,15 @@ ${JSON.stringify(context, null, 2)}`;
         },
       });
       const text = response.text?.trim();
-      if (text) return JSON.parse(text) as ReportNarrative;
+      if (text) {
+        console.log(`Gemini report: narasi berhasil dibuat via ${model}`);
+        return JSON.parse(text) as ReportNarrative;
+      }
     } catch (error) {
       console.error(`Gemini report error (${model}):`, error);
     }
   }
+  console.error('Gemini report: semua model gagal, memakai narasi cadangan (bukan AI).');
   return null;
 }
 

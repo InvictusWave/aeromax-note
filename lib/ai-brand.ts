@@ -1,3 +1,14 @@
+// Verified against this project's Gemini API quota dashboard: the "Flash" models (2.5, 3.7)
+// are capped at 20 requests/day each, while the "Flash Lite" models get 500/day — so once a
+// Flash model's tiny daily quota is used up, a Lite model is a far more reliable fallback
+// than retrying another 20/day model. Update this list if the dashboard's tiers change.
+const FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.7-flash'];
+
+/** Builds a deduped model list: the given preferred model(s) first, then the high-quota fallbacks. */
+export function geminiModelChain(...preferred: string[]) {
+  return Array.from(new Set([...preferred, ...FALLBACK_MODELS]));
+}
+
 // Shared Aeromax business profile fed to Gemini so every AI feature speaks with the same context.
 export const AEROMAX_PROFILE = `Anda adalah asisten AI internal Aeromax Studio (Aeromax Production & Aeromedia Production), sebuah production house audio-visual, tata suara (sound system), dan studio rekaman panggung yang berpusat di Karanganyar (Lalung & Ngaliyan Kepuh), Solo Raya, Jawa Tengah, Indonesia.
 
