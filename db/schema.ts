@@ -1,5 +1,6 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import type { MonthlyReport } from '../lib/report-types';
 
 export const events = sqliteTable('events', {
   id: integer('id').primaryKey({ autoIncrement: true }), name: text('name').notNull(), date: text('date').notNull(), endDate: text('end_date').notNull().default(''), location: text('location').notNull(), organizer: text('organizer').notNull(), type: text('type').notNull(), nextActions: text('next_actions', { mode: 'json' }).$type<string[]>().notNull().default([]), generalNotes: text('general_notes').notNull().default(''), followUpDone: integer('follow_up_done', { mode: 'boolean' }).notNull().default(false), createdAt: text('created_at').notNull(),
@@ -32,6 +33,15 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: text('expires_at').notNull(),
   createdAt: text('created_at').notNull(),
 });
+export const reports = sqliteTable('reports', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  content: text('content', { mode: 'json' }).$type<MonthlyReport>().notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, table => ({ userUpdated: index('reports_user_updated_idx').on(table.userId, table.updatedAt) }));
 export const eventRelations = relations(events, ({ many }) => ({ networking: many(networking), prospects: many(prospects) }));
 export const networkingRelations = relations(networking, ({ one }) => ({ event: one(events, { fields: [networking.eventId], references: [events.id] }) }));
 export const prospectRelations = relations(prospects, ({ one }) => ({ event: one(events, { fields: [prospects.eventId], references: [events.id] }) }));

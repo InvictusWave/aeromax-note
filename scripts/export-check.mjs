@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import writeXlsxFile from 'write-excel-file/node';
 import { buildSheets } from '../lib/export.ts';
-import { buildReportHtml } from '../lib/report.ts';
+import { buildReportHtml, sanitizeReportHtml } from '../lib/report.ts';
 
 const events = [
   {
@@ -42,6 +42,7 @@ await writeXlsxFile(sheets).toFile(join(tmpdir(), 'aeromax-export-check.xlsx'));
 
 // PDF report: narrative + contact details in the document, and user text escaped
 const html = buildReportHtml({
+  generatedAt: '2026-03-31T12:00:00Z',
   startDate: '2026-03-01',
   endDate: '2026-03-31',
   dateRangeLabel: '1 Maret 2026 s/d 31 Maret 2026',
@@ -69,6 +70,11 @@ assert.ok(html.includes('Airshow &lt;2026&gt; &amp; &quot;Expo&quot;'), 'report 
 assert.ok(html.includes('Adam &lt;Ibnu&gt;'), 'report escapes the author name');
 assert.ok(!html.includes('Airshow <2026>'), 'report must not emit raw user markup');
 assert.ok(!html.includes('Hormat kami'), 'sign-off no longer includes "Hormat kami"');
+assert.ok(html.includes('Aeromax Production &middot; Laporan Internal'), 'report header uses Aeromax Production');
+assert.ok(html.includes('Dokumen internal Aeromax Production.'), 'report footer uses Aeromax Production');
+assert.ok(!html.includes('Aeromax Studio'), 'report branding must not use Aeromax Studio');
+assert.ok(html.includes('Tanggal laporan</dt><dd>31 Maret 2026</dd>'), 'saved report retains its original report date');
+assert.ok(!sanitizeReportHtml('<p onclick="alert(1)">ok</p><script>alert(2)</script>').includes('script'), 'editable report HTML is sanitized');
 const tasksOnly = buildReportHtml({
   startDate: '2026-04-01', endDate: '2026-04-30', dateRangeLabel: 'April 2026', author: 'Adam',
   narrative: { judul: 'Laporan Kerja April 2026', ringkasan: ['Fokus pekerjaan studio.'], aktivitas: [],

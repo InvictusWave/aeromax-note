@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:seed-admin": "node --env-file=.env.local scripts/seed-admin.mjs",
     "db:create-tasks": "node --env-file=.env.local scripts/create-tasks-table.mjs",
+    "db:create-reports": "node --env-file=.env.local scripts/create-reports-table.mjs",
     "db:add-date-range": "node --env-file=.env.local scripts/add-date-range.mjs"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@radix-ui/react-toast": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.2.16",
     "date-fns": "^4.4.0",
+    "docx": "^9.7.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.36.4",
     "lucide-react": "^0.468.0",

@@ -12,6 +12,8 @@ export type ReportNarrative = {
 };
 
 export type MonthlyReport = {
+  generatedAt?: string;
+  editedHtml?: string;
   startDate: string;
   endDate: string;
   dateRangeLabel: string;
@@ -20,3 +22,6 @@ export type MonthlyReport = {
   events: EventNote[];
   tasks: DailyTask[];
 };
+
+export type SavedReportSummary = { id: number; title: string; startDate: string; endDate: string; updatedAt: string };
+export type SavedReport = SavedReportSummary & { content: MonthlyReport };

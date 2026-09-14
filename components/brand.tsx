@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ClipboardList, LayoutDashboard, NotebookPen, Plus, Sparkles, UserRound } from 'lucide-react';
+import { ClipboardList, FileText, LayoutDashboard, NotebookPen, Plus, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 import { DiscreteTabs } from '@/components/discrete-tabs';
@@ -12,6 +12,7 @@ const links = [
   { href: '/dashboard', label: 'Dasbor', icon: LayoutDashboard },
   { href: '/notes', label: 'Catatan', icon: NotebookPen },
   { href: '/tasks', label: 'Tugas', icon: ClipboardList },
+  { href: '/reports', label: 'Laporan', icon: FileText },
   { href: '/ai', label: 'AI', icon: Sparkles },
   { href: '/form', label: 'Tambah', icon: Plus },
 ];
@@ -40,6 +41,13 @@ const mobileTabs = [
     href: '/tasks',
   },
   {
+    id: 'reports',
+    label: 'Laporan',
+    icon: <FileText size={20} />,
+    activeColor: 'text-leaf',
+    href: '/reports',
+  },
+  {
     id: 'ai',
     label: 'AI',
     icon: <Sparkles size={20} />,
@@ -58,6 +66,8 @@ export function Brand(_: { dashboard?: boolean }) {
     ? 'notes'
     : pathname.startsWith('/tasks')
     ? 'tasks'
+    : pathname.startsWith('/reports')
+    ? 'reports'
     : pathname.startsWith('/ai')
     ? 'ai'
     : 'dashboard';
@@ -67,6 +77,7 @@ export function Brand(_: { dashboard?: boolean }) {
     router.prefetch('/dashboard');
     router.prefetch('/notes');
     router.prefetch('/tasks');
+    router.prefetch('/reports');
     router.prefetch('/ai');
     router.prefetch('/account');
     router.prefetch('/form');
@@ -78,7 +89,7 @@ export function Brand(_: { dashboard?: boolean }) {
         <Link href="/dashboard" prefetch={true} className="flex min-h-11 items-center transition hover:opacity-90 active:scale-[0.98]">
           <Logo size="sm" />
         </Link>
-        <nav className="hidden items-center gap-1 sm:flex">
+        <nav className="hidden min-w-0 items-center gap-1 overflow-x-auto sm:flex">
           {desktopLinks.map(link => {
             const Icon = link.icon;
             const active = pathname === link.href || (link.href === '/form' && pathname.startsWith('/form'));
@@ -135,4 +146,3 @@ export function Brand(_: { dashboard?: boolean }) {
     </>
   );
 }
-

@@ -1,5 +1,6 @@
 import type { EventNote } from './event-types.ts';
 import type { MonthlyReport } from './report-types.ts';
+import { reportDocxBlob } from './report-docx.ts';
 import type { DailyTask } from './task-types.ts';
 import { actionLabel, potentialLabel } from './labels.ts';
 
@@ -179,26 +180,28 @@ const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 /** Numbered narrative sections I-VI; the "tugas harian" section is skipped (and everything after renumbers) when there's nothing to show. */
 function narrativeSections(narrative: MonthlyReport['narrative'], hasTasks: boolean) {
   const sections = [
-    { title: 'Ringkasan pelaksanaan', body: paragraphs(narrative.ringkasan) },
+    { key: 'ringkasan', title: 'Ringkasan pelaksanaan', body: paragraphs(narrative.ringkasan) },
     {
+      key: 'aktivitas',
       title: 'Uraian kegiatan event',
       body: bullets(narrative.aktivitas) || '<p class="empty">Tidak ada kegiatan event pada periode ini.</p>',
     },
     ...(hasTasks || narrative.tugasHarian?.length
-      ? [{ title: 'Tugas harian di luar event', body: bullets(narrative.tugasHarian) }]
+      ? [{ key: 'tugasHarian', title: 'Tugas harian di luar event', body: bullets(narrative.tugasHarian) }]
       : []),
-    { title: 'Analisis potensi dan peluang', body: paragraphs(narrative.analisisPotensi) },
-    { title: 'Rekomendasi tindak lanjut', body: bullets(narrative.rekomendasi) },
-    { title: 'Penutup', body: paragraphs([narrative.penutup]) },
+    { key: 'analisisPotensi', title: 'Analisis potensi dan peluang', body: paragraphs(narrative.analisisPotensi) },
+    { key: 'rekomendasi', title: 'Rekomendasi tindak lanjut', body: bullets(narrative.rekomendasi) },
+    { key: 'penutup', title: 'Penutup', body: paragraphs([narrative.penutup]) },
   ];
 
-  return sections.map((section, index) => `<h2>${ROMAN_NUMERALS[index]}. ${section.title}</h2>${section.body}`).join('\n\n  ');
+  return sections.map((section, index) => `<section data-report-section="${section.key}"><h2>${ROMAN_NUMERALS[index]}. ${section.title}</h2>${section.body}</section>`).join('\n\n  ');
 }
 
 export function buildReportHtml(report: MonthlyReport) {
+  if (report.editedHtml) return report.editedHtml;
   const { narrative, events } = report;
   const tasks = report.tasks ?? [];
-  const printedAt = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const printedAt = new Date(report.generatedAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const dateLabel = report.dateRangeLabel || `${report.startDate} s/d ${report.endDate}`;
 
   return `<!doctype html>
@@ -210,6 +213,7 @@ export function buildReportHtml(report: MonthlyReport) {
   body { margin: 0; font: 10.5pt/1.65 "Iowan Old Style", Georgia, "Times New Roman", serif; color: ${INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   h1 { margin: 0; font-size: 19pt; line-height: 1.25; letter-spacing: -.01em; }
   h2 { break-after: avoid; margin: 26px 0 8px; font-size: 9pt; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: .16em; color: ${MUTED}; border-bottom: 1px solid ${LINE}; padding-bottom: 5px; }
+  [contenteditable="true"]:focus { outline: 2px solid ${LEAF}; outline-offset: 3px; border-radius: 3px; }
   p { margin: 0 0 9px; text-align: justify; }
   ul { margin: 0 0 9px; padding-left: 17px; }
   li { margin-bottom: 5px; break-inside: avoid; }
@@ -234,8 +238,8 @@ export function buildReportHtml(report: MonthlyReport) {
   .foot { margin-top: 22px; border-top: 1px solid ${LINE}; padding-top: 9px; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 7.5pt; color: ${MUTED}; }
 </style></head><body>
   <header class="doc-head">
-    <p class="eyebrow">Aeromax Studio &middot; Laporan Internal</p>
-    <h1>${escape(narrative.judul)}</h1>
+    <p class="eyebrow">Aeromax Production &middot; Laporan Internal</p>
+    <h1 data-report-title="true">${escape(narrative.judul)}</h1>
     <dl class="ident">
       <div><dt>Disusun oleh</dt><dd>${escape(report.author)}</dd></div>
       <div><dt>Periode</dt><dd>${escape(dateLabel)}</dd></div>
@@ -256,8 +260,17 @@ export function buildReportHtml(report: MonthlyReport) {
 
   ${prospectsTable(events)}
 
-  <p class="foot">Dokumen internal Aeromax Studio. Data kontak bersifat rahasia dan hanya digunakan untuk keperluan tindak lanjut perusahaan.</p>
+  <p class="foot">Dokumen internal Aeromax Production. Data kontak bersifat rahasia dan hanya digunakan untuk keperluan tindak lanjut perusahaan.</p>
 </body></html>`;
+}
+
+/** Keeps browser editing rich while stripping executable markup before persistence/printing. */
+export function sanitizeReportHtml(html: string) {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/?(?:script|iframe|object|embed|form|base)[^>]*>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(?:href|src)\s*=\s*(?:"|')?\s*javascript:[^"'\s>]*/gi, '');
 }
 
 function printHtml(html: string) {
@@ -276,8 +289,8 @@ function printHtml(html: string) {
   document.body.appendChild(frame);
 }
 
-/** Asks the server for an AI-written period report, then opens the browser print/save-as-PDF dialog. */
-export async function exportDateRangeReport(startDate: string, endDate: string) {
+/** Generate a draft without opening the print dialog. */
+export async function generateDateRangeReport(startDate: string, endDate: string): Promise<MonthlyReport> {
   const response = await fetch('/api/report', {
     method: 'POST',
     credentials: 'include',
@@ -288,5 +301,19 @@ export async function exportDateRangeReport(startDate: string, endDate: string) 
   const result = await response.json().catch(() => null);
   if (!response.ok) throw new Error(result?.error || 'Laporan tidak dapat dibuat.');
 
-  printHtml(buildReportHtml(result as MonthlyReport));
+  return result as MonthlyReport;
+}
+
+export function exportReportPdf(report: MonthlyReport) {
+  printHtml(buildReportHtml(report));
+}
+
+/** Downloads the current preview as a real, editable Word document. */
+export async function exportReportDocx(report: MonthlyReport) {
+  const blob = await reportDocxBlob(sanitizeReportHtml(buildReportHtml(report)));
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `aeromax-laporan-${report.startDate}-${report.endDate}.docx`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
 }
