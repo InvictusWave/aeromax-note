@@ -51,6 +51,31 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const user = await getSessionUser(request);
+  if (!user) return NextResponse.json({ error: 'Akses tidak sah' }, { status: 401 });
+  if (!db) return NextResponse.json({ error: 'Database belum dikonfigurasi' }, { status: 503 });
+
+  const body = await request.json().catch(() => null);
+  const id = Number(body?.id);
+  if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID tugas tidak valid' }, { status: 400 });
+
+  const parsed = taskSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Validasi gagal', issues: parsed.error.flatten() }, { status: 400 });
+  }
+
+  // Scoped to the owner so one user can never edit another creator's task.
+  const [row] = await db
+    .update(tasks)
+    .set({ ...parsed.data, endDate: parsed.data.endDate || parsed.data.date })
+    .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
+    .returning();
+
+  if (!row) return NextResponse.json({ error: 'Tugas tidak ditemukan' }, { status: 404 });
+  return NextResponse.json(row);
+}
+
 export async function DELETE(request: Request) {
   const user = await getSessionUser(request);
   if (!user) return NextResponse.json({ error: 'Akses tidak sah' }, { status: 401 });

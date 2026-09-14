@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarDays, ClipboardList, Loader2, MapPin, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, ClipboardList, Loader2, MapPin, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 
 
 import { Brand } from '@/components/brand';
@@ -16,6 +16,7 @@ import { TASK_CATEGORIES, taskSchema, type DailyTask, type TaskForm } from '@/li
 
 const today = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => new Date().toISOString().slice(0, 7);
+const blankTask = (): TaskForm => ({ date: today(), endDate: '', title: '', category: '', location: '', result: '' });
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -37,6 +38,8 @@ export default function TasksPage() {
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
   const [removing, setRemoving] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const formTop = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -46,8 +49,9 @@ export default function TasksPage() {
     formState: { errors, isSubmitting },
   } = useForm<TaskForm>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { date: today(), endDate: '', title: '', category: '', location: '', result: '' },
+    defaultValues: blankTask(),
   });
+  const startDate = useWatch({ control, name: 'date' });
 
   const load = useCallback(async (target: string) => {
     setLoading(true);
@@ -69,29 +73,64 @@ export default function TasksPage() {
 
   async function onSubmit(values: TaskForm) {
     setError('');
+    const editing = editingId !== null;
     const response = await fetch('/api/tasks', {
-      method: 'POST',
+      method: editing ? 'PATCH' : 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
+      body: JSON.stringify(editing ? { ...values, id: editingId } : values),
     });
 
     if (!response.ok) {
-      setError('Tugas tidak dapat disimpan.');
+      setError(editing ? 'Tugas tidak dapat diperbarui.' : 'Tugas tidak dapat disimpan.');
       return;
     }
 
     const saved = (await response.json()) as DailyTask;
-    reset({ date: values.date, title: '', category: '', location: '', result: '' });
+    setEditingId(null);
+    reset(blankTask());
+
+    if (editing) {
+      if (saved.date.startsWith(month)) setItems(current => current.map(item => (item.id === saved.id ? saved : item)));
+      else {
+        setItems(current => current.filter(item => item.id !== saved.id));
+        setMonth(saved.date.slice(0, 7));
+      }
+      return;
+    }
+
     if (saved.date.startsWith(month)) setItems(current => [saved, ...current]);
     else setMonth(saved.date.slice(0, 7));
+  }
+
+  function startEdit(item: DailyTask) {
+    setEditingId(item.id);
+    reset({
+      date: item.date,
+      endDate: item.endDate && item.endDate !== item.date ? item.endDate : '',
+      title: item.title,
+      category: item.category,
+      location: item.location,
+      result: item.result,
+    });
+    formTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setError('');
+    reset(blankTask());
   }
 
   async function remove(id: number) {
     setRemoving(id);
     const response = await fetch(`/api/tasks?id=${id}`, { method: 'DELETE', credentials: 'include' });
-    if (response.ok) setItems(current => current.filter(item => item.id !== id));
-    else setListError('Tugas tidak dapat dihapus.');
+    if (response.ok) {
+      setItems(current => current.filter(item => item.id !== id));
+      if (editingId === id) cancelEdit();
+    } else {
+      setListError('Tugas tidak dapat dihapus.');
+    }
     setRemoving(null);
   }
 
@@ -114,14 +153,33 @@ export default function TasksPage() {
           </p>
         </header>
 
+        <div ref={formTop}>
         <Card className="p-4 sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold">{editingId ? 'Ubah tugas' : 'Tambah tugas'}</h2>
+            {editingId ? (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="flex items-center gap-1 text-sm font-semibold text-slate-500 transition hover:text-ink"
+              >
+                <X size={15} /> Batal
+              </button>
+            ) : null}
+          </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Tanggal" error={errors.date?.message}>
                 <DatePicker control={control} name="date" />
               </Field>
               <Field label="Sampai tanggal" error={errors.endDate?.message}>
-                <Input type="date" max={today()} {...register('endDate')} />
+                <DatePicker
+                  control={control}
+                  name="endDate"
+                  placeholder="Opsional, isi jika lebih dari 1 hari"
+                  minDate={startDate}
+                  clearable
+                />
               </Field>
               <Field label="Jenis pekerjaan" error={errors.category?.message}>
                 <NativeSelect {...register('category')}>
@@ -150,11 +208,18 @@ export default function TasksPage() {
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
             <Button type="submit" disabled={isSubmitting} className="w-full bg-ink text-white shadow-sm">
-              {isSubmitting ? <Loader2 size={17} className="animate-spin" /> : <Plus size={17} />}
-              {isSubmitting ? 'Menyimpan...' : 'Simpan Tugas'}
+              {isSubmitting ? (
+                <Loader2 size={17} className="animate-spin" />
+              ) : editingId ? (
+                <Save size={17} />
+              ) : (
+                <Plus size={17} />
+              )}
+              {isSubmitting ? 'Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Simpan Tugas'}
             </Button>
           </form>
         </Card>
+        </div>
 
         <div className="mb-3 mt-8 flex items-end justify-between gap-3 px-1 sm:px-0">
           <div>
@@ -191,6 +256,11 @@ export default function TasksPage() {
                               {item.category}
                             </span>
                           ) : null}
+                          {item.endDate && item.endDate !== item.date ? (
+                            <span className="flex items-center gap-1">
+                              <CalendarDays size={12} /> s/d {formatDate(item.endDate)}
+                            </span>
+                          ) : null}
                           {item.location ? (
                             <span className="flex items-center gap-1">
                               <MapPin size={12} /> {item.location}
@@ -199,15 +269,25 @@ export default function TasksPage() {
                         </div>
                         {item.result ? <p className="mt-2 text-sm text-slate-600">{item.result}</p> : null}
                       </div>
-                      <button
-                        type="button"
-                        aria-label={`Hapus tugas ${item.title}`}
-                        disabled={removing === item.id}
-                        onClick={() => void remove(item.id)}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-                      >
-                        {removing === item.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Ubah tugas ${item.title}`}
+                          onClick={() => startEdit(item)}
+                          className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-mist hover:text-leaf"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Hapus tugas ${item.title}`}
+                          disabled={removing === item.id}
+                          onClick={() => void remove(item.id)}
+                          className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                        >
+                          {removing === item.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                        </button>
+                      </div>
                     </Card>
                   ))}
                 </div>
