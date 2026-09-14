@@ -137,6 +137,7 @@ export function buildReportHtml(report: MonthlyReport) {
   const { narrative, events } = report;
   const tasks = report.tasks ?? [];
   const printedAt = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const dateLabel = report.dateRangeLabel || `${report.startDate} s/d ${report.endDate}`;
 
   return `<!doctype html>
 <html lang="id"><head><meta charset="utf-8"><title>${escape(narrative.judul)} &mdash; ${escape(
@@ -175,7 +176,7 @@ export function buildReportHtml(report: MonthlyReport) {
     <h1>${escape(narrative.judul)}</h1>
     <dl class="ident">
       <div><dt>Disusun oleh</dt><dd>${escape(report.author)}</dd></div>
-      <div><dt>Periode</dt><dd>${escape(report.monthLabel)}</dd></div>
+      <div><dt>Periode</dt><dd>${escape(dateLabel)}</dd></div>
       <div><dt>Tanggal laporan</dt><dd>${escape(printedAt)}</dd></div>
     </dl>
   </header>
@@ -202,7 +203,7 @@ export function buildReportHtml(report: MonthlyReport) {
   ${paragraphs([narrative.penutup])}
 
   <div class="sign">
-    <p>${escape(report.monthLabel)}</p>
+    <p>${escape(dateLabel)}</p>
     <p>Hormat kami,</p>
     <p class="rule">${escape(report.author)}</p>
   </div>
@@ -238,13 +239,13 @@ function printHtml(html: string) {
   document.body.appendChild(frame);
 }
 
-/** Asks the server for an AI-written monthly report, then opens the browser print/save-as-PDF dialog. */
-export async function exportMonthlyReport(month: string) {
+/** Asks the server for an AI-written period report, then opens the browser print/save-as-PDF dialog. */
+export async function exportDateRangeReport(startDate: string, endDate: string) {
   const response = await fetch('/api/report', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ month }),
+    body: JSON.stringify({ startDate, endDate }),
   });
 
   const result = await response.json().catch(() => null);

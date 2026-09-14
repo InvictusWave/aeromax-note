@@ -12,8 +12,9 @@ export type ReportNarrative = {
 };
 
 export type MonthlyReport = {
-  month: string;
-  monthLabel: string;
+  startDate: string;
+  endDate: string;
+  dateRangeLabel: string;
   author: string;
   narrative: ReportNarrative;
   events: EventNote[];

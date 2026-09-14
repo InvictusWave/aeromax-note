@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { and, eq, like } from 'drizzle-orm';
+import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { db } from '@/db';
 import { events as eventsTable, tasks as tasksTable } from '@/db/schema';
 import { getSessionUser } from '@/lib/auth';
@@ -12,7 +12,10 @@ import type { DailyTask } from '@/lib/task-types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const requestSchema = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) });
+const requestSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+}).refine(d => d.startDate <= d.endDate, 'Tanggal awal harus sebelum atau sama dengan tanggal akhir');
 
 const narrativeSchema = {
   type: 'object',
@@ -28,18 +31,19 @@ const narrativeSchema = {
   required: ['judul', 'ringkasan', 'aktivitas', 'tugasHarian', 'analisisPotensi', 'rekomendasi', 'penutup'],
 } as const;
 
-function monthLabel(month: string) {
-  const [year, index] = month.split('-').map(Number);
-  return new Date(year, index - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+function dateRangeLabel(startDate: string, endDate: string) {
+  const start = new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const end = new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `${start} s/d ${end}`;
 }
 
 /** Deterministic wording used when Gemini is unavailable, so the report still prints. */
-function fallbackNarrative(month: string, author: string, context: ReportContext): ReportNarrative {
-  const label = monthLabel(month);
+function fallbackNarrative(startDate: string, endDate: string, author: string, context: ReportContext): ReportNarrative {
+  const label = dateRangeLabel(startDate, endDate);
   return {
     judul: `Laporan Kerja ${label}`,
     ringkasan: [
-      `Sepanjang ${label}, ${author} menangani ${context.totalEvent} event dengan total ${context.totalKontak} kontak baru dan ${context.totalProspek} prospek perusahaan yang tercatat, serta ${context.totalTugasHarian} tugas harian di luar event.`,
+      `Dalam periode ${label}, ${author} menangani ${context.totalEvent} event dengan total ${context.totalKontak} kontak baru dan ${context.totalProspek} prospek perusahaan yang tercatat, serta ${context.totalTugasHarian} tugas harian di luar event.`,
       `Dari seluruh kontak tersebut, ${context.potensiTinggi} orang tergolong berpotensi tinggi dan ${context.perluFollowUp} kontak masih menunggu tindak lanjut.`,
     ],
     aktivitas: context.events.map(
@@ -58,23 +62,23 @@ function fallbackNarrative(month: string, author: string, context: ReportContext
 
 type ReportContext = ReturnType<typeof buildContext>;
 
-function buildContext(rows: Awaited<ReturnType<typeof loadMonth>>, taskRows: DailyTask[]) {
-  const contacts = rows.flatMap(row => row.networking);
+function buildContext(rows: Awaited<ReturnType<typeof loadEvents>>, taskRows: DailyTask[]) {
+  const contacts = rows.flatMap((row: any) => row.networking);
   return {
     totalEvent: rows.length,
     totalKontak: contacts.length,
-    totalProspek: rows.reduce((total, row) => total + row.prospects.length, 0),
-    potensiTinggi: contacts.filter(contact => contact.potential?.toLowerCase() === 'high').length,
-    perluFollowUp: contacts.filter(contact => contact.followUp).length,
+    totalProspek: rows.reduce((total: number, row: any) => total + row.prospects.length, 0),
+    potensiTinggi: contacts.filter((contact: any) => contact.potential?.toLowerCase() === 'high').length,
+    perluFollowUp: contacts.filter((contact: any) => contact.followUp).length,
     totalTugasHarian: taskRows.length,
-    tugasHarian: taskRows.map(task => ({
+    tugasHarian: taskRows.map((task: any) => ({
       tanggal: task.date,
       jenis: task.category,
       uraian: task.title,
       lokasi: task.location,
       hasil: task.result,
     })),
-    events: rows.map(row => ({
+    events: rows.map((row: any) => ({
       event: row.name,
       tanggal: row.date,
       lokasi: row.location,
@@ -83,7 +87,7 @@ function buildContext(rows: Awaited<ReturnType<typeof loadMonth>>, taskRows: Dai
       tindakLanjut: row.nextActions,
       statusSelesai: row.followUpDone,
       catatan: row.generalNotes,
-      kontak: row.networking.map(person => ({
+      kontak: row.networking.map((person: any) => ({
         nama: person.name,
         perusahaan: person.company,
         jabatan: person.position,
@@ -92,7 +96,7 @@ function buildContext(rows: Awaited<ReturnType<typeof loadMonth>>, taskRows: Dai
         potensi: person.potential,
         perluFollowUp: person.followUp,
       })),
-      prospek: row.prospects.map(prospect => ({
+      prospek: row.prospects.map((prospect: any) => ({
         perusahaan: prospect.companyName,
         industri: prospect.industry,
         orangDitemui: prospect.personMet,
@@ -103,31 +107,31 @@ function buildContext(rows: Awaited<ReturnType<typeof loadMonth>>, taskRows: Dai
   };
 }
 
-function loadMonth(month: string) {
+function loadEvents(startDate: string, endDate: string) {
   return db!.query.events.findMany({
     with: { networking: true, prospects: true },
-    where: like(eventsTable.date, `${month}%`),
-    orderBy: (event, { asc }) => [asc(event.date)],
+    where: and(gte(eventsTable.date, startDate), lte(eventsTable.date, endDate)),
+    orderBy: asc(eventsTable.date),
   });
 }
 
 /** Daily tasks are personal work logs, so a report only ever shows its own author's. */
-function loadTasks(month: string, userId: number) {
+function loadTasks(startDate: string, endDate: string, userId: number) {
   return db!
     .select()
     .from(tasksTable)
-    .where(and(eq(tasksTable.userId, userId), like(tasksTable.date, `${month}%`)))
-    .orderBy(tasksTable.date) as Promise<DailyTask[]>;
+    .where(and(eq(tasksTable.userId, userId), gte(tasksTable.date, startDate), lte(tasksTable.date, endDate)))
+    .orderBy(asc(tasksTable.date)) as Promise<DailyTask[]>;
 }
 
-async function writeNarrative(month: string, author: string, context: ReportContext) {
+async function writeNarrative(startDate: string, endDate: string, author: string, context: ReportContext) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
   const ai = new GoogleGenAI({ apiKey });
   const models = Array.from(new Set([process.env.GEMINI_MODEL || 'gemini-2.5-flash', 'gemini-2.5-flash']));
 
-  const prompt = `Tulis laporan kerja bulanan ${monthLabel(month)} untuk ${author}, staf Aeromax Studio. Laporan mencakup pekerjaan event maupun tugas harian di luar event.
+  const prompt = `Tulis laporan kerja periode ${dateRangeLabel(startDate, endDate)} untuk ${author}, staf Aeromax Studio. Laporan mencakup pekerjaan event maupun tugas harian di luar event.
 
 ATURAN PENULISAN:
 - Bahasa Indonesia formal untuk laporan internal ke manajemen. Tidak ada sapaan, emoji, atau markdown.
@@ -172,25 +176,26 @@ export async function POST(request: Request) {
   if (!db) return NextResponse.json({ error: 'Database belum dikonfigurasi' }, { status: 503 });
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: 'Bulan laporan tidak valid' }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: 'Rentang tanggal laporan tidak valid' }, { status: 400 });
 
-  const { month } = parsed.data;
+  const { startDate, endDate } = parsed.data;
 
   try {
-    const [rows, taskRows] = await Promise.all([loadMonth(month), loadTasks(month, user.id)]);
+    const [rows, taskRows] = await Promise.all([loadEvents(startDate, endDate), loadTasks(startDate, endDate, user.id)]);
     if (!rows.length && !taskRows.length) {
       return NextResponse.json(
-        { error: `Tidak ada catatan event maupun tugas harian pada ${monthLabel(month)}.` },
+        { error: `Tidak ada catatan event maupun tugas harian pada periode ${dateRangeLabel(startDate, endDate)}.` },
         { status: 404 }
       );
     }
 
     const context = buildContext(rows, taskRows);
-    const narrative = (await writeNarrative(month, user.name, context)) ?? fallbackNarrative(month, user.name, context);
+    const narrative = (await writeNarrative(startDate, endDate, user.name, context)) ?? fallbackNarrative(startDate, endDate, user.name, context);
 
     return NextResponse.json({
-      month,
-      monthLabel: monthLabel(month),
+      startDate,
+      endDate,
+      dateRangeLabel: dateRangeLabel(startDate, endDate),
       author: user.name,
       narrative,
       events: rows,

@@ -2,23 +2,33 @@
 
 import { useState } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui';
-import { MonthPicker } from '@/components/base-ui/month-picker';
-import { exportMonthlyReport } from '@/lib/report';
+import { Button, Input } from '@/components/ui';
+import { exportDateRangeReport } from '@/lib/report';
 
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+const today = () => new Date().toISOString().slice(0, 10);
 
-/** Month picker + button that generates the AI-written monthly work report as a printable PDF. */
+const get30DaysAgo = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().slice(0, 10);
+};
+
+/** Date range picker + button that generates the AI-written work report as a printable PDF. */
 export function MonthlyReportButton() {
-  const [month, setMonth] = useState(currentMonth);
+  const [startDate, setStartDate] = useState(get30DaysAgo);
+  const [endDate, setEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   async function handleClick() {
+    if (!startDate || !endDate || startDate > endDate) {
+      setError('Rentang tanggal tidak valid');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      await exportMonthlyReport(month);
+      await exportDateRangeReport(startDate, endDate);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Laporan tidak dapat dibuat.');
     } finally {
@@ -29,17 +39,30 @@ export function MonthlyReportButton() {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-end gap-2">
-        <MonthPicker
-          value={month}
-          onChange={setMonth}
-          max={currentMonth()}
-          label="Bulan laporan"
-          className="w-[11rem]"
-        />
+        <div>
+          <label className="block text-xs font-medium text-slate-500">Dari</label>
+          <Input
+            type="date"
+            value={startDate}
+            max={today()}
+            onChange={e => setStartDate(e.target.value)}
+            className="h-10 w-32 px-2 py-0 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500">Sampai</label>
+          <Input
+            type="date"
+            value={endDate}
+            max={today()}
+            onChange={e => setEndDate(e.target.value)}
+            className="h-10 w-32 px-2 py-0 text-sm"
+          />
+        </div>
         <Button
           type="button"
           onClick={handleClick}
-          disabled={busy || !month}
+          disabled={busy || !startDate || !endDate}
           className="border border-line bg-white px-3.5 text-ink shadow-xs hover:bg-slate-50 active:scale-95"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
