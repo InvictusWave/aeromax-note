@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   try {
     const [row] = await db
       .insert(tasks)
-      .values({ ...parsed.data, userId: user.id, endDate: parsed.data.endDate || '', createdAt: new Date().toISOString() })
+      .values({ ...parsed.data, userId: user.id, endDate: parsed.data.endDate || parsed.data.date, createdAt: new Date().toISOString() })
       .returning();
     return NextResponse.json(row, { status: 201 });
   } catch (error) {
