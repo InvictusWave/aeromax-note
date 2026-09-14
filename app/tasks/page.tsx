@@ -46,7 +46,7 @@ export default function TasksPage() {
     formState: { errors, isSubmitting },
   } = useForm<TaskForm>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { date: today(), title: '', category: '', location: '', result: '' },
+    defaultValues: { date: today(), endDate: '', title: '', category: '', location: '', result: '' },
   });
 
   const load = useCallback(async (target: string) => {
@@ -119,6 +119,9 @@ export default function TasksPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Tanggal" error={errors.date?.message}>
                 <DatePicker control={control} name="date" />
+              </Field>
+              <Field label="Sampai tanggal" error={errors.endDate?.message}>
+                <Input type="date" max={today()} {...register('endDate')} />
               </Field>
               <Field label="Jenis pekerjaan" error={errors.category?.message}>
                 <NativeSelect {...register('category')}>

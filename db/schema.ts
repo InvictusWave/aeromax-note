@@ -2,7 +2,7 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 export const events = sqliteTable('events', {
-  id: integer('id').primaryKey({ autoIncrement: true }), name: text('name').notNull(), date: text('date').notNull(), location: text('location').notNull(), organizer: text('organizer').notNull(), type: text('type').notNull(), nextActions: text('next_actions', { mode: 'json' }).$type<string[]>().notNull().default([]), generalNotes: text('general_notes').notNull().default(''), followUpDone: integer('follow_up_done', { mode: 'boolean' }).notNull().default(false), createdAt: text('created_at').notNull(),
+  id: integer('id').primaryKey({ autoIncrement: true }), name: text('name').notNull(), date: text('date').notNull(), endDate: text('end_date').notNull().default(''), location: text('location').notNull(), organizer: text('organizer').notNull(), type: text('type').notNull(), nextActions: text('next_actions', { mode: 'json' }).$type<string[]>().notNull().default([]), generalNotes: text('general_notes').notNull().default(''), followUpDone: integer('follow_up_done', { mode: 'boolean' }).notNull().default(false), createdAt: text('created_at').notNull(),
 });
 export const networking = sqliteTable('networking', { id: integer('id').primaryKey({ autoIncrement: true }), eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }), name: text('name').notNull(), company: text('company').notNull().default(''), position: text('position').notNull().default(''), contact: text('contact').notNull().default(''), social: text('social').notNull().default(''), chatSummary: text('chat_summary').notNull().default(''), potential: text('potential').notNull().default(''), followUp: integer('follow_up', { mode: 'boolean' }).notNull().default(false) });
 export const prospects = sqliteTable('prospects', { id: integer('id').primaryKey({ autoIncrement: true }), eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }), companyName: text('company_name').notNull(), industry: text('industry').notNull().default(''), personMet: text('person_met').notNull().default(''), potentialSummary: text('potential_summary').notNull().default(''), notes: text('notes').notNull().default('') });
@@ -10,6 +10,7 @@ export const tasks = sqliteTable('tasks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   date: text('date').notNull(),
+  endDate: text('end_date').notNull().default(''),
   title: text('title').notNull(),
   category: text('category').notNull().default(''),
   location: text('location').notNull().default(''),
