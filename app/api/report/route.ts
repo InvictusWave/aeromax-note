@@ -50,7 +50,7 @@ function fallbackNarrative(startDate: string, endDate: string, author: string, c
       event => `${event.event} (${event.tanggal}, ${event.lokasi}) — ${event.kontak.length} kontak, ${event.prospek.length} prospek.`
     ),
     tugasHarian: context.tugasHarian.map(
-      task => `${task.tanggal} — ${task.uraian}${task.jenis ? ` (${task.jenis})` : ''}${task.lokasi ? ` di ${task.lokasi}` : ''}.`
+      task => `${task.uraian}${task.jenis ? ` (${task.jenis})` : ''}${task.lokasi ? ` di ${task.lokasi}` : ''}.`
     ),
     analisisPotensi: [
       'Ringkasan potensi disusun otomatis dari data catatan event. Narasi AI tidak tersedia saat laporan ini dibuat.',
@@ -140,7 +140,7 @@ ATURAN PENULISAN:
 - judul: judul laporan, maksimal 10 kata.
 - ringkasan: 2-3 paragraf utuh (bukan poin) berisi capaian bulan ini beserta angkanya.
 - aktivitas: satu poin per event, sebutkan nama event, tanggal, lokasi, dan hasil konkret pertemuannya. Kosongkan array ini jika tidak ada event.
-- tugasHarian: rangkum pekerjaan harian di luar event dari data tugasHarian. Kelompokkan per jenis pekerjaan, sebutkan jumlah dan contoh konkretnya beserta tanggal. Kosongkan array ini jika data tugasHarian kosong.
+- tugasHarian: rangkum pekerjaan harian di luar event dari data tugasHarian. Kelompokkan per jenis pekerjaan, sebutkan jumlah dan contoh konkretnya. JANGAN sebutkan tanggal di bagian ini. Kosongkan array ini jika data tugasHarian kosong.
 - analisisPotensi: 1-2 paragraf tentang kualitas prospek, sektor yang dominan, dan peluang bisnis yang terbaca dari data.
 - rekomendasi: 3-5 poin tindak lanjut spesifik, sebutkan nama kontak atau perusahaan yang dituju.
 - penutup: satu paragraf singkat.

@@ -13,6 +13,45 @@ const escape = (value: string | number | null | undefined) =>
 
 const dash = (value: string | null | undefined) => (value?.trim() ? escape(value) : '&ndash;');
 
+/**
+ * Renders a free-text notes/hasil field as a compact bullet list when it contains
+ * "-"-prefixed items, instead of one run-on paragraph — otherwise as plain text.
+ * Whitespace (including hard line-wraps from pasted text) is collapsed first, so a
+ * bullet is recognized the same way whether it started on its own line or not.
+ * ponytail: any whitespace-bounded "-" counts as a bullet marker, so a lone " - "
+ * used as a sentence dash would also split; acceptable since that's exactly how
+ * these notes are written (dash-prefixed points), and this is what was asked for.
+ */
+function noteHtml(value: string | null | undefined): string {
+  const text = value?.trim();
+  if (!text) return '&ndash;';
+
+  const flat = text.replace(/\s+/g, ' ');
+  const items = flat
+    .split(/(?:^|\s)-\s+/)
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (items.length < 2) return escape(text);
+  return `<ul class="cell-list">${items.map(item => `<li>${escape(item)}</li>`).join('')}</ul>`;
+}
+
+/** "5 Sep 2026" for a single day; "12–22 Sep 2026" or "28 Agu – 3 Sep 2026" for a range. */
+function formatEventDate(startISO: string, endISO?: string) {
+  if (!endISO || endISO === startISO) return formatDate(startISO);
+
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return formatDate(startISO);
+
+  const sameMonth = start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
+  if (sameMonth) return `${start.getDate()}&ndash;${formatDate(endISO)}`;
+
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startLabel = start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' });
+  return `${startLabel} &ndash; ${formatDate(endISO)}`;
+}
+
 const paragraphs = (lines: string[] | undefined) =>
   (lines ?? []).filter(line => line?.trim()).map(line => `<p>${escape(line)}</p>`).join('');
 
@@ -37,7 +76,7 @@ function eventsTable(events: EventNote[]) {
           ? 'Berjalan'
           : 'Tidak perlu';
       return `<tr>
-        <td>${formatDate(event.date)}</td>
+        <td class="nowrap">${formatEventDate(event.date, event.endDate)}</td>
         <td><strong>${dash(event.name)}</strong>${
           event.type ? `<span class="sub">${escape(event.type)}</span>` : ''
         }</td>
@@ -77,7 +116,7 @@ function contactsTable(events: EventNote[]) {
           contact.social ? `<span class="sub">${escape(contact.social)}</span>` : ''
         }</td>
         <td>${contact.potential ? `<span class="tag">${escape(potentialLabel(contact.potential))}</span>` : '&ndash;'}</td>
-        <td>${dash(event.name)}<span class="sub">${dash(contact.chatSummary)}</span></td>
+        <td>${dash(event.name)}<div class="sub">${noteHtml(contact.chatSummary)}</div></td>
       </tr>`
     )
     .join('');
@@ -94,17 +133,16 @@ function tasksTable(tasks: DailyTask[]) {
     .sort((a, b) => a.date.localeCompare(b.date))
     .map(
       task => `<tr>
-        <td class="nowrap">${formatDate(task.date)}</td>
         <td><strong>${dash(task.title)}</strong></td>
         <td>${dash(task.category)}</td>
         <td>${dash(task.location)}</td>
-        <td>${dash(task.result)}</td>
+        <td>${noteHtml(task.result)}</td>
       </tr>`
     )
     .join('');
 
   return `<table>
-      <thead><tr><th>Tanggal</th><th>Uraian tugas</th><th>Jenis pekerjaan</th><th>Lokasi</th><th>Hasil / catatan</th></tr></thead>
+      <thead><tr><th>Uraian tugas</th><th>Jenis pekerjaan</th><th>Lokasi</th><th>Hasil / catatan</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -119,13 +157,13 @@ function prospectsTable(events: EventNote[]) {
         <td><strong>${dash(prospect.companyName)}</strong></td>
         <td>${dash(prospect.industry)}</td>
         <td>${dash(prospect.personMet)}</td>
-        <td>${dash(prospect.potentialSummary)}</td>
+        <td>${noteHtml(prospect.potentialSummary)}</td>
         <td>${dash(event.name)}</td>
       </tr>`
     )
     .join('');
 
-  return `<h2>Lampiran D &mdash; Prospek perusahaan</h2>
+  return `<h2>Lampiran D: Prospek perusahaan</h2>
     <table>
       <thead><tr><th>Perusahaan</th><th>Industri</th><th>PIC ditemui</th><th>Ringkasan potensi</th><th>Asal event</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -160,7 +198,7 @@ export function buildReportHtml(report: MonthlyReport) {
   const dateLabel = report.dateRangeLabel || `${report.startDate} s/d ${report.endDate}`;
 
   return `<!doctype html>
-<html lang="id"><head><meta charset="utf-8"><title>${escape(narrative.judul)} &mdash; ${escape(
+<html lang="id"><head><meta charset="utf-8"><title>${escape(narrative.judul)} &middot; ${escape(
     report.author
   )}</title><style>
   @page { size: A4; margin: 18mm 16mm; }
@@ -185,6 +223,9 @@ export function buildReportHtml(report: MonthlyReport) {
   .nowrap { white-space: nowrap; }
   .sub { display: block; font-size: 7.5pt; color: ${MUTED}; font-weight: 400; }
   .tag { display: inline-block; border: 1px solid ${LINE}; border-radius: 999px; padding: 1px 7px; font-size: 7.5pt; font-weight: 600; white-space: nowrap; }
+  .cell-list { margin: 0; padding-left: 13px; }
+  .cell-list li { margin-bottom: 3px; font-size: inherit; }
+  .cell-list li:last-child { margin-bottom: 0; }
   .empty { font-size: 9pt; color: ${MUTED}; font-style: italic; }
   .foot { margin-top: 22px; border-top: 1px solid ${LINE}; padding-top: 9px; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 7.5pt; color: ${MUTED}; }
 </style></head><body>
@@ -200,13 +241,13 @@ export function buildReportHtml(report: MonthlyReport) {
 
   ${narrativeSections(narrative, tasks.length > 0)}
 
-  <h2>Lampiran A &mdash; Rekap event</h2>
+  <h2>Lampiran A: Rekap event</h2>
   ${events.length ? eventsTable(events) : '<p class="empty">Tidak ada event pada periode ini.</p>'}
 
-  <h2>Lampiran B &mdash; Rekap tugas harian</h2>
+  <h2>Lampiran B: Rekap tugas harian</h2>
   ${tasks.length ? tasksTable(tasks) : '<p class="empty">Tidak ada tugas harian tercatat pada periode ini.</p>'}
 
-  <h2>Lampiran C &mdash; Daftar kontak yang dapat dihubungi</h2>
+  <h2>Lampiran C: Daftar kontak yang dapat dihubungi</h2>
   ${contactsTable(events)}
 
   ${prospectsTable(events)}

@@ -82,4 +82,36 @@ assert.ok(tasksOnly.includes('Tidak ada event pada periode ini'), 'event-less mo
 assert.ok(tasksOnly.includes('Editing video klip OM Adella'), 'event-less month still lists daily tasks');
 assert.ok(!tasksOnly.includes('undefined'), 'report must not leak undefined');
 
+// dash-prefixed "hasil"/"catatan" text becomes a bullet list, not one run-on paragraph
+const bulletedTask = buildReportHtml({
+  startDate: '2026-05-01', endDate: '2026-05-31', dateRangeLabel: 'Mei 2026', author: 'Adam',
+  narrative: { judul: 'Laporan Kerja Mei 2026', ringkasan: ['Ringkasan.'], aktivitas: [], tugasHarian: [],
+               analisisPotensi: ['Analisis.'], rekomendasi: ['Rekomendasi.'], penutup: 'Penutup.' },
+  events: [],
+  tasks: [{
+    id: 3, userId: 1, date: '2026-05-01', title: 'Live streaming konser',
+    category: 'Live streaming', location: 'Studio',
+    result: '- Mempersiapkan equipment yang diperlukan untuk kegiatan live streaming.\n- Memastikan kebutuhan alat telah tersedia dan siap digunakan sebelum kegiatan berlangsung.',
+    createdAt: '2026-05-01',
+  }],
+});
+assert.match(bulletedTask, /<ul class="cell-list"><li>Mempersiapkan equipment[^<]*<\/li><li>Memastikan kebutuhan alat[^<]*<\/li><\/ul>/, 'dash-prefixed hasil becomes a bullet list');
+assert.ok(!bulletedTask.includes('<th>Tanggal</th>'), 'Lampiran B no longer shows a date column');
+
+// event date range: same-month range collapses to "12–22 Sep 2026"; single day stays plain
+const rangedEvent = buildReportHtml({
+  startDate: '2026-09-01', endDate: '2026-09-30', dateRangeLabel: 'September 2026', author: 'Adam',
+  narrative: { judul: 'Laporan Kerja September 2026', ringkasan: ['Ringkasan.'], aktivitas: ['Aktivitas.'], tugasHarian: [],
+               analisisPotensi: ['Analisis.'], rekomendasi: ['Rekomendasi.'], penutup: 'Penutup.' },
+  events: [{ ...events[0], name: 'Tur OM Adella', date: '2026-09-12', endDate: '2026-09-22' }],
+  tasks: [],
+});
+assert.ok(rangedEvent.includes('12&ndash;22 Sep 2026'), 'multi-day event shows a compact date range');
+
+// appendix headings use a plain colon, not an em dash
+for (const heading of ['Lampiran A: Rekap event', 'Lampiran B: Rekap tugas harian', 'Lampiran C: Daftar kontak yang dapat dihubungi']) {
+  assert.ok(rangedEvent.includes(heading), `heading missing or still using an em dash: ${heading}`);
+}
+assert.ok(!rangedEvent.includes('&mdash;'), 'appendix headings must not use an em dash');
+
 console.log('OK');
