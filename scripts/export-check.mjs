@@ -42,8 +42,9 @@ await writeXlsxFile(sheets).toFile(join(tmpdir(), 'aeromax-export-check.xlsx'));
 
 // PDF report: narrative + contact details in the document, and user text escaped
 const html = buildReportHtml({
-  month: '2026-03',
-  monthLabel: 'Maret 2026',
+  startDate: '2026-03-01',
+  endDate: '2026-03-31',
+  dateRangeLabel: '1 Maret 2026 s/d 31 Maret 2026',
   author: 'Adam <Ibnu>',
   narrative: {
     judul: 'Laporan Kerja Maret 2026',
@@ -67,8 +68,9 @@ for (const needle of ['Budi', 'PT Angkasa', '08123456789', 'tertarik drone', 'PT
 assert.ok(html.includes('Airshow &lt;2026&gt; &amp; &quot;Expo&quot;'), 'report escapes user text');
 assert.ok(html.includes('Adam &lt;Ibnu&gt;'), 'report escapes the author name');
 assert.ok(!html.includes('Airshow <2026>'), 'report must not emit raw user markup');
+assert.ok(!html.includes('Hormat kami'), 'sign-off no longer includes "Hormat kami"');
 const tasksOnly = buildReportHtml({
-  month: '2026-04', monthLabel: 'April 2026', author: 'Adam',
+  startDate: '2026-04-01', endDate: '2026-04-30', dateRangeLabel: 'April 2026', author: 'Adam',
   narrative: { judul: 'Laporan Kerja April 2026', ringkasan: ['Fokus pekerjaan studio.'], aktivitas: [],
                tugasHarian: ['Enam sesi editing di studio.'], analisisPotensi: ['Belum ada prospek baru.'],
                rekomendasi: ['Lanjutkan editing.'], penutup: 'Demikian.' },

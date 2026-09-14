@@ -255,7 +255,7 @@ export default function DashboardPage() {
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">Dasbor</h1>
             <p className="mt-1 text-sm text-slate-500">Analisis performa pemasaran event dan tindak lanjut Aeromax.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               disabled={!events.length}

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { DateRangePicker } from '@/components/base-ui/date-range-picker';
 import { exportDateRangeReport } from '@/lib/report';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -38,27 +39,17 @@ export function MonthlyReportButton() {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex items-end gap-2">
-        <div>
-          <label className="block text-xs font-medium text-slate-500">Dari</label>
-          <Input
-            type="date"
-            value={startDate}
-            max={today()}
-            onChange={e => setStartDate(e.target.value)}
-            className="h-10 w-32 px-2 py-0 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-500">Sampai</label>
-          <Input
-            type="date"
-            value={endDate}
-            max={today()}
-            onChange={e => setEndDate(e.target.value)}
-            className="h-10 w-32 px-2 py-0 text-sm"
-          />
-        </div>
+      <div className="flex items-center gap-2">
+        <DateRangePicker
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(nextStart, nextEnd) => {
+            setStartDate(nextStart);
+            setEndDate(nextEnd);
+          }}
+          max={today()}
+          className="w-[12rem] sm:w-[13.5rem]"
+        />
         <Button
           type="button"
           onClick={handleClick}

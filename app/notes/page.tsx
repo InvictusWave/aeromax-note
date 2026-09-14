@@ -120,7 +120,7 @@ export default function NotesPage() {
               <h1 className="mt-1 text-[28px] font-bold leading-tight tracking-tight sm:text-4xl">Catatan</h1>
               <p className="mt-2 max-w-xl text-sm leading-5 text-slate-500">Cari, tindak lanjuti, dan kelola hasil pertemuan tim Aeromax.</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 onClick={handleExport}

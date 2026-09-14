@@ -77,14 +77,13 @@ function contactsTable(events: EventNote[]) {
           contact.social ? `<span class="sub">${escape(contact.social)}</span>` : ''
         }</td>
         <td>${contact.potential ? `<span class="tag">${escape(potentialLabel(contact.potential))}</span>` : '&ndash;'}</td>
-        <td>${contact.followUp ? 'Perlu dihubungi' : 'Terhubung'}</td>
         <td>${dash(event.name)}<span class="sub">${dash(contact.chatSummary)}</span></td>
       </tr>`
     )
     .join('');
 
   return `<table>
-      <thead><tr><th>Nama &amp; jabatan</th><th>Perusahaan / orkes</th><th>Telp / WA / email</th><th>Potensi</th><th>Status</th><th>Asal event &amp; catatan</th></tr></thead>
+      <thead><tr><th>Nama &amp; jabatan</th><th>Perusahaan / orkes</th><th>Kontak</th><th>Potensi</th><th>Asal event &amp; catatan</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -133,6 +132,27 @@ function prospectsTable(events: EventNote[]) {
     </table>`;
 }
 
+const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+
+/** Numbered narrative sections I-VI; the "tugas harian" section is skipped (and everything after renumbers) when there's nothing to show. */
+function narrativeSections(narrative: MonthlyReport['narrative'], hasTasks: boolean) {
+  const sections = [
+    { title: 'Ringkasan pelaksanaan', body: paragraphs(narrative.ringkasan) },
+    {
+      title: 'Uraian kegiatan event',
+      body: bullets(narrative.aktivitas) || '<p class="empty">Tidak ada kegiatan event pada periode ini.</p>',
+    },
+    ...(hasTasks || narrative.tugasHarian?.length
+      ? [{ title: 'Tugas harian di luar event', body: bullets(narrative.tugasHarian) }]
+      : []),
+    { title: 'Analisis potensi dan peluang', body: paragraphs(narrative.analisisPotensi) },
+    { title: 'Rekomendasi tindak lanjut', body: bullets(narrative.rekomendasi) },
+    { title: 'Penutup', body: paragraphs([narrative.penutup]) },
+  ];
+
+  return sections.map((section, index) => `<h2>${ROMAN_NUMERALS[index]}. ${section.title}</h2>${section.body}`).join('\n\n  ');
+}
+
 export function buildReportHtml(report: MonthlyReport) {
   const { narrative, events } = report;
   const tasks = report.tasks ?? [];
@@ -166,9 +186,6 @@ export function buildReportHtml(report: MonthlyReport) {
   .sub { display: block; font-size: 7.5pt; color: ${MUTED}; font-weight: 400; }
   .tag { display: inline-block; border: 1px solid ${LINE}; border-radius: 999px; padding: 1px 7px; font-size: 7.5pt; font-weight: 600; white-space: nowrap; }
   .empty { font-size: 9pt; color: ${MUTED}; font-style: italic; }
-  .sign { break-inside: avoid; margin-top: 34px; width: 62mm; }
-  .sign p { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9pt; text-align: left; }
-  .sign .rule { margin-top: 22mm; border-top: 1px solid ${INK}; padding-top: 5px; font-weight: 600; }
   .foot { margin-top: 22px; border-top: 1px solid ${LINE}; padding-top: 9px; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 7.5pt; color: ${MUTED}; }
 </style></head><body>
   <header class="doc-head">
@@ -181,32 +198,7 @@ export function buildReportHtml(report: MonthlyReport) {
     </dl>
   </header>
 
-  <h2>I. Ringkasan pelaksanaan</h2>
-  ${paragraphs(narrative.ringkasan)}
-
-  <h2>II. Uraian kegiatan event</h2>
-  ${bullets(narrative.aktivitas) || '<p class="empty">Tidak ada kegiatan event pada periode ini.</p>'}
-
-  ${
-    tasks.length || narrative.tugasHarian?.length
-      ? `<h2>III. Tugas harian di luar event</h2>${bullets(narrative.tugasHarian)}`
-      : ''
-  }
-
-  <h2>${tasks.length || narrative.tugasHarian?.length ? 'IV' : 'III'}. Analisis potensi dan peluang</h2>
-  ${paragraphs(narrative.analisisPotensi)}
-
-  <h2>${tasks.length || narrative.tugasHarian?.length ? 'V' : 'IV'}. Rekomendasi tindak lanjut</h2>
-  ${bullets(narrative.rekomendasi)}
-
-  <h2>${tasks.length || narrative.tugasHarian?.length ? 'VI' : 'V'}. Penutup</h2>
-  ${paragraphs([narrative.penutup])}
-
-  <div class="sign">
-    <p>${escape(dateLabel)}</p>
-    <p>Hormat kami,</p>
-    <p class="rule">${escape(report.author)}</p>
-  </div>
+  ${narrativeSections(narrative, tasks.length > 0)}
 
   <h2>Lampiran A &mdash; Rekap event</h2>
   ${events.length ? eventsTable(events) : '<p class="empty">Tidak ada event pada periode ini.</p>'}

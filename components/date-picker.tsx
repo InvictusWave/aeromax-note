@@ -100,7 +100,12 @@ export function DatePicker<T extends FieldValues>({
         </span>
       </div>
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-30 max-w-[calc(100vw-2rem)] overflow-x-auto rounded-2xl border border-line bg-white p-2 shadow-soft sm:p-3">
+        <div
+          className="absolute left-0 top-[calc(100%+8px)] z-30 max-w-[calc(100vw-2rem)] overflow-x-auto rounded-2xl border border-line bg-white p-2 shadow-soft sm:p-3"
+          // react-day-picker's own stylesheet also declares these on :root, and can load after
+          // globals.css in the bundle — setting them inline guarantees the brand color wins.
+          style={{ '--rdp-accent-color': '#2f7d4a', '--rdp-accent-background-color': '#dff2b2' } as React.CSSProperties}
+        >
           <DayPicker
             locale={indonesianLocale}
             mode="single"
