@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed-admin": "node --env-file=.env.local scripts/seed-admin.mjs",
-    "db:create-tasks": "node --env-file=.env.local scripts/create-tasks-table.mjs"
+    "db:create-tasks": "node --env-file=.env.local scripts/create-tasks-table.mjs",
+    "db:add-date-range": "node --env-file=.env.local scripts/add-date-range.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
