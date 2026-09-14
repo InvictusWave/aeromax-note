@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, NotebookPen, Plus, Sparkles, UserRound } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, NotebookPen, Plus, Sparkles, UserRound } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 import { DiscreteTabs } from '@/components/discrete-tabs';
@@ -11,6 +11,7 @@ import { DiscreteTabs } from '@/components/discrete-tabs';
 const links = [
   { href: '/dashboard', label: 'Dasbor', icon: LayoutDashboard },
   { href: '/notes', label: 'Catatan', icon: NotebookPen },
+  { href: '/tasks', label: 'Tugas', icon: ClipboardList },
   { href: '/ai', label: 'AI', icon: Sparkles },
   { href: '/form', label: 'Tambah', icon: Plus },
 ];
@@ -32,6 +33,13 @@ const mobileTabs = [
     href: '/notes',
   },
   {
+    id: 'tasks',
+    label: 'Tugas',
+    icon: <ClipboardList size={20} />,
+    activeColor: 'text-sky-600',
+    href: '/tasks',
+  },
+  {
     id: 'ai',
     label: 'AI',
     icon: <Sparkles size={20} />,
@@ -48,6 +56,8 @@ export function Brand(_: { dashboard?: boolean }) {
     ? 'dashboard'
     : pathname.startsWith('/notes') || pathname.startsWith('/form')
     ? 'notes'
+    : pathname.startsWith('/tasks')
+    ? 'tasks'
     : pathname.startsWith('/ai')
     ? 'ai'
     : 'dashboard';
@@ -56,6 +66,7 @@ export function Brand(_: { dashboard?: boolean }) {
   useEffect(() => {
     router.prefetch('/dashboard');
     router.prefetch('/notes');
+    router.prefetch('/tasks');
     router.prefetch('/ai');
     router.prefetch('/account');
     router.prefetch('/form');

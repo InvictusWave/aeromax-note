@@ -27,7 +27,8 @@ import { Protected } from '@/components/protected';
 import { FollowUpBadge } from '@/components/follow-up-badge';
 import { followUpState, type EventNote } from '@/lib/event-types';
 import { useEvents } from '@/hooks/use-events';
-import { exportEventsToCsv } from '@/lib/export';
+import { exportEventsToExcel } from '@/lib/export';
+import { MonthlyReportButton } from '@/components/monthly-report-button';
 import { actionLabel, potentialLabel } from '@/lib/labels';
 import { cleanPhoneNumber, downloadVCard } from '@/lib/contact-actions';
 import { WhatsAppTemplateModal } from '@/components/whatsapp-template-modal';
@@ -258,11 +259,12 @@ export default function DashboardPage() {
             <Button
               type="button"
               disabled={!events.length}
-              onClick={() => exportEventsToCsv(events)}
+              onClick={() => void exportEventsToExcel(events)}
               className="border border-line bg-white px-3.5 text-ink shadow-xs hover:bg-slate-50 active:scale-95"
             >
-              <Download size={16} /> <span className="hidden min-[400px]:inline">Unduh Rekap</span> CSV
+              <Download size={16} /> <span className="hidden min-[400px]:inline">Unduh Rekap</span> Excel
             </Button>
+            <MonthlyReportButton />
             <Link href="/form">
               <Button className="bg-ink text-white shadow-xs hover:bg-slate-900 active:scale-95">
                 <Plus size={17} /> Tambah Catatan

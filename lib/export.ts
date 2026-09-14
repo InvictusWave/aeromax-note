@@ -1,17 +1,29 @@
-import type { EventNote } from '@/lib/event-types';
-import { actionLabel, potentialLabel } from '@/lib/labels';
+import type { EventNote } from './event-types.ts';
+import { actionLabel, potentialLabel } from './labels.ts';
 
-function escapeCsv(value: string | number | boolean | null | undefined): string {
-  if (value === null || value === undefined) return '""';
-  const str = String(value).replace(/"/g, '""');
-  return `"${str}"`;
+type Cell = {
+  value: string | number;
+  type: StringConstructor | NumberConstructor;
+  fontWeight?: 'bold';
+};
+
+const text = (value: string | null | undefined): Cell => ({
+  value: value || '',
+  type: String,
+});
+const num = (value: number): Cell => ({ value, type: Number });
+const header = (titles: string[]) =>
+  titles.map((value): Cell => ({ value, type: String, fontWeight: 'bold' }));
+const widths = (sizes: number[]) => sizes.map(width => ({ width }));
+
+function followUpLabel(event: EventNote) {
+  if (event.followUpDone) return 'Selesai';
+  return event.networking.some(contact => contact.followUp) ? 'Belum Selesai' : 'Tidak Perlu';
 }
 
-export function exportEventsToCsv(events: EventNote[]) {
-  if (!events.length) return;
-
-  const rows: string[][] = [
-    [
+export function buildSheets(events: EventNote[]) {
+  const eventRows: Cell[][] = [
+    header([
       'ID Event',
       'Nama Event',
       'Tanggal',
@@ -26,59 +38,127 @@ export function exportEventsToCsv(events: EventNote[]) {
       'Jumlah Prospek',
       'Daftar Prospek & Industri',
       'Dibuat Pada',
-    ],
+    ]),
+  ];
+
+  const contactRows: Cell[][] = [
+    header([
+      'ID Event',
+      'Nama Event',
+      'Tanggal',
+      'Lokasi',
+      'Nama Kontak',
+      'Perusahaan',
+      'Jabatan',
+      'Telp/WA',
+      'Media Sosial',
+      'Potensi',
+      'Perlu Follow-Up',
+      'Ringkasan Obrolan',
+    ]),
+  ];
+
+  const prospectRows: Cell[][] = [
+    header([
+      'ID Event',
+      'Nama Event',
+      'Tanggal',
+      'Lokasi',
+      'Nama Perusahaan',
+      'Industri',
+      'PIC Ditemui',
+      'Ringkasan Potensi',
+      'Catatan',
+    ]),
   ];
 
   for (const event of events) {
+    const origin = [num(event.id), text(event.name), text(event.date), text(event.location)];
+
     const contactsSummary = event.networking
       .map(
-        (c) =>
+        c =>
           `${c.name} (${c.company || '-'}${c.position ? ` - ${c.position}` : ''}${
             c.potential ? ` [Potensi ${potentialLabel(c.potential)}]` : ''
-          }${c.contact ? ` Telp/WA: ${c.contact}` : ''})`
+          }${c.contact ? ` Telp/WA: ${c.contact}` : ''})`,
       )
       .join('; ');
 
     const prospectsSummary = event.prospects
       .map(
-        (p) =>
+        p =>
           `${p.companyName} (${p.industry || '-'}${p.personMet ? ` PIC: ${p.personMet}` : ''}${
             p.potentialSummary ? ` Catatan: ${p.potentialSummary}` : ''
-          })`
+          })`,
       )
       .join('; ');
 
-    const actions = event.nextActions.map(actionLabel).join(', ');
-
-    rows.push([
-      String(event.id),
-      event.name,
-      event.date,
-      event.location,
-      event.organizer || '',
-      event.type || '',
-      event.followUpDone ? 'Selesai' : event.networking.some((c) => c.followUp) ? 'Belum Selesai' : 'Tidak Perlu',
-      actions,
-      event.generalNotes || '',
-      String(event.networking.length),
-      contactsSummary,
-      String(event.prospects.length),
-      prospectsSummary,
-      event.createdAt,
+    eventRows.push([
+      ...origin,
+      text(event.organizer),
+      text(event.type),
+      text(followUpLabel(event)),
+      text(event.nextActions.map(actionLabel).join(', ')),
+      text(event.generalNotes),
+      num(event.networking.length),
+      text(contactsSummary),
+      num(event.prospects.length),
+      text(prospectsSummary),
+      text(event.createdAt),
     ]);
+
+    for (const contact of event.networking) {
+      contactRows.push([
+        ...origin,
+        text(contact.name),
+        text(contact.company),
+        text(contact.position),
+        text(contact.contact),
+        text(contact.social),
+        text(contact.potential ? potentialLabel(contact.potential) : ''),
+        text(contact.followUp ? 'Ya' : 'Tidak'),
+        text(contact.chatSummary),
+      ]);
+    }
+
+    for (const prospect of event.prospects) {
+      prospectRows.push([
+        ...origin,
+        text(prospect.companyName),
+        text(prospect.industry),
+        text(prospect.personMet),
+        text(prospect.potentialSummary),
+        text(prospect.notes),
+      ]);
+    }
   }
 
-  const csvContent = '\uFEFF' + rows.map((r) => r.map(escapeCsv).join(',')).join('\r\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute(
-    'download',
-    `aeromax-catatan-event-${new Date().toISOString().slice(0, 10)}.csv`
+  return [
+    {
+      data: eventRows,
+      sheet: 'Catatan Event',
+      columns: widths([10, 28, 14, 22, 22, 16, 16, 26, 40, 12, 50, 12, 50, 22]),
+      stickyRowsCount: 1,
+    },
+    {
+      data: contactRows,
+      sheet: 'Kontak',
+      columns: widths([10, 28, 14, 22, 24, 26, 20, 20, 22, 12, 14, 40]),
+      stickyRowsCount: 1,
+    },
+    {
+      data: prospectRows,
+      sheet: 'Prospek',
+      columns: widths([10, 28, 14, 22, 28, 20, 22, 40, 40]),
+      stickyRowsCount: 1,
+    },
+  ];
+}
+
+export async function exportEventsToExcel(events: EventNote[]) {
+  if (!events.length) return;
+  const { default: writeXlsxFile } = await import('write-excel-file/browser');
+  await writeXlsxFile(buildSheets(events)).toFile(
+    `aeromax-catatan-event-${new Date().toISOString().slice(0, 10)}.xlsx`,
   );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

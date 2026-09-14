@@ -6,6 +6,16 @@ export const events = sqliteTable('events', {
 });
 export const networking = sqliteTable('networking', { id: integer('id').primaryKey({ autoIncrement: true }), eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }), name: text('name').notNull(), company: text('company').notNull().default(''), position: text('position').notNull().default(''), contact: text('contact').notNull().default(''), social: text('social').notNull().default(''), chatSummary: text('chat_summary').notNull().default(''), potential: text('potential').notNull().default(''), followUp: integer('follow_up', { mode: 'boolean' }).notNull().default(false) });
 export const prospects = sqliteTable('prospects', { id: integer('id').primaryKey({ autoIncrement: true }), eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }), companyName: text('company_name').notNull(), industry: text('industry').notNull().default(''), personMet: text('person_met').notNull().default(''), potentialSummary: text('potential_summary').notNull().default(''), notes: text('notes').notNull().default('') });
+export const tasks = sqliteTable('tasks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(),
+  title: text('title').notNull(),
+  category: text('category').notNull().default(''),
+  location: text('location').notNull().default(''),
+  result: text('result').notNull().default(''),
+  createdAt: text('created_at').notNull(),
+});
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
@@ -24,5 +34,6 @@ export const sessions = sqliteTable('sessions', {
 export const eventRelations = relations(events, ({ many }) => ({ networking: many(networking), prospects: many(prospects) }));
 export const networkingRelations = relations(networking, ({ one }) => ({ event: one(events, { fields: [networking.eventId], references: [events.id] }) }));
 export const prospectRelations = relations(prospects, ({ one }) => ({ event: one(events, { fields: [prospects.eventId], references: [events.id] }) }));
-export const userRelations = relations(users, ({ many }) => ({ sessions: many(sessions) }));
+export const userRelations = relations(users, ({ many }) => ({ sessions: many(sessions), tasks: many(tasks) }));
+export const taskRelations = relations(tasks, ({ one }) => ({ user: one(users, { fields: [tasks.userId], references: [users.id] }) }));
 export const sessionRelations = relations(sessions, ({ one }) => ({ user: one(users, { fields: [sessions.userId], references: [users.id] }) }));
